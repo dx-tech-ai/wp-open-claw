@@ -1,0 +1,427 @@
+/* ==========================================================================
+   WP Open Claw — Command Palette
+   Modern glassmorphism overlay with dark theme
+   ========================================================================== */
+
+/* --- Overlay --- */
+.wpoc-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+}
+
+.wpoc-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* --- Palette Container --- */
+.wpoc-palette {
+    position: relative;
+    z-index: 1;
+    width: 90vw;
+    max-width: 720px;
+    max-height: 75vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.5),
+        0 0 60px rgba(94, 53, 177, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: wpoc-slide-in 0.2s ease-out;
+}
+
+@keyframes wpoc-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* --- Header --- */
+.wpoc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wpoc-logo {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e0e0ff;
+    letter-spacing: 0.5px;
+}
+
+.wpoc-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.wpoc-close:hover {
+    color: #fff;
+}
+
+/* --- Input Area --- */
+.wpoc-input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wpoc-search-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.wpoc-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.wpoc-search-input:focus {
+    border-color: rgba(94, 53, 177, 0.6);
+    box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.15);
+}
+
+.wpoc-send-btn {
+    background: linear-gradient(135deg, #5e35b1, #7c4dff);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wpoc-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(94, 53, 177, 0.4);
+}
+
+.wpoc-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* --- Log Container --- */
+.wpoc-log-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    min-height: 100px;
+    max-height: 40vh;
+    scroll-behavior: smooth;
+}
+
+.wpoc-log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    animation: wpoc-fade-in 0.3s ease-out;
+}
+
+@keyframes wpoc-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wpoc-log-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.wpoc-log-content {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.85);
+    word-break: break-word;
+}
+
+.wpoc-log-content pre {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 6px 0 0;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    overflow-x: auto;
+    color: #a0cfff;
+}
+
+/* Log types — Clean chat style */
+.wpoc-log-step {
+    background: transparent;
+    border: none;
+    padding: 2px 0;
+    margin-bottom: 2px;
+}
+
+.wpoc-step-details {
+    width: 100%;
+}
+
+.wpoc-step-details summary {
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wpoc-step-details summary::-webkit-details-marker { display: none; }
+.wpoc-step-details summary::marker { content: ''; }
+
+.wpoc-step-details summary::before {
+    content: '▸';
+    font-size: 10px;
+    transition: transform 0.15s;
+}
+
+.wpoc-step-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.wpoc-step-details summary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.wpoc-step-icon {
+    font-size: 12px;
+}
+
+.wpoc-step-body {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 4px 0 4px 20px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: rgba(255, 255, 255, 0.5);
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+pre.wpoc-step-body {
+    color: #a0cfff;
+}
+
+/* User message */
+.wpoc-log-user {
+    background: rgba(94, 53, 177, 0.15);
+    border-left: 3px solid rgba(94, 53, 177, 0.6);
+}
+
+/* AI Response — prominent */
+.wpoc-log-response {
+    background: rgba(76, 175, 80, 0.08);
+    border-left: 3px solid rgba(76, 175, 80, 0.5);
+    padding: 12px 14px;
+}
+
+.wpoc-log-response .wpoc-log-content {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.wpoc-log-error {
+    background: rgba(244, 67, 54, 0.08);
+    border-left: 3px solid rgba(244, 67, 54, 0.5);
+}
+
+/* --- Action Cards --- */
+.wpoc-actions-container {
+    padding: 0 20px 16px;
+}
+
+.wpoc-action-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    animation: wpoc-fade-in 0.3s ease-out;
+}
+
+.wpoc-action-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0ff;
+    margin-bottom: 8px;
+}
+
+.wpoc-action-card-body {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 14px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.wpoc-action-card-body pre {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    overflow-x: auto;
+    color: #a0cfff;
+    margin: 0;
+}
+
+.wpoc-action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.wpoc-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.wpoc-btn:hover {
+    transform: scale(1.03);
+}
+
+.wpoc-btn-approve {
+    background: linear-gradient(135deg, #2e7d32, #43a047);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+}
+
+.wpoc-btn-approve:hover {
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.5);
+}
+
+.wpoc-btn-reject {
+    background: rgba(244, 67, 54, 0.15);
+    color: #ef5350;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.wpoc-btn-reject:hover {
+    background: rgba(244, 67, 54, 0.25);
+}
+
+/* --- Footer --- */
+.wpoc-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.wpoc-shortcut {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+}
+
+.wpoc-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Loading spinner */
+.wpoc-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #7c4dff;
+    border-radius: 50%;
+    animation: wpoc-spin 0.7s linear infinite;
+}
+
+@keyframes wpoc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Scrollbar --- */
+.wpoc-log-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wpoc-log-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.wpoc-log-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.wpoc-log-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}

@@ -1,0 +1,21 @@
+# Dependencies (reinstall via: composer install)
+/vendor/
+
+# IDE & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Debug logs
+*.log
+debug.log
+
+# Composer lock (optional: remove this line if you want reproducible builds)
+# composer.lock

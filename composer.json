@@ -1,0 +1,19 @@
+{
+    "name": "openclaw/wp-open-claw",
+    "description": "AI Agent WordPress Plugin — ReAct loop with autonomous action execution",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1",
+        "woocommerce/action-scheduler": "^3.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "OpenClaw\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}
