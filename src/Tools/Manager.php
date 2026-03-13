@@ -86,8 +86,13 @@ class Manager {
 
         $tool = $this->tools[$name];
 
+        // Check dynamic confirmation first (for mixed read/write tools).
+        $needsConfirm = ($tool instanceof DynamicConfirmInterface)
+            ? $tool->requiresConfirmationFor($params)
+            : $tool->requiresConfirmation();
+
         // If tool requires confirmation, return early with pending status.
-        if ($tool->requiresConfirmation()) {
+        if ($needsConfirm) {
             return [
                 'success' => true,
                 'data'    => $params,
@@ -97,7 +102,7 @@ class Manager {
             ];
         }
 
-        // Execute immediately for read-only tools.
+        // Execute immediately for read-only tools / read-only actions.
         return $this->executeDirectly($tool, $params);
     }
 

@@ -280,8 +280,15 @@
 
             const data = await res.json();
 
-            if (data.result) {
-                addLogEntry(data.result.type, data.result.content);
+            // Process steps from the confirmed/resumed loop.
+            if (data.steps) {
+                for (const step of data.steps) {
+                    if (step.type === 'confirmation') {
+                        renderActionCard(step.content);
+                    } else {
+                        addLogEntry(step.type, step.content);
+                    }
+                }
             }
 
         } catch (err) {

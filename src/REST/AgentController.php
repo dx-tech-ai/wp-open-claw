@@ -117,6 +117,9 @@ class AgentController {
 
     /**
      * Handle action confirmation (approve/reject).
+     *
+     * On approval, the agent executes the confirmed action and then
+     * resumes the ReAct loop to continue with any remaining tasks.
      */
     public function handle_confirm(WP_REST_Request $request): WP_REST_Response {
         $action_id  = $request->get_param('action_id');
@@ -137,12 +140,14 @@ class AgentController {
         $kernel->setPendingActions($session['pending_actions'] ?? []);
 
         if ($approved) {
-            $result = $kernel->confirmAction($action_id);
+            // confirmAction now returns an array of steps (observation + resumed loop).
+            $steps = $kernel->confirmAction($action_id);
         } else {
             $result = $kernel->rejectAction($action_id);
+            $steps  = [$result]; // Wrap single result in array for consistency.
         }
 
-        // Update session state.
+        // Update session state (may have new pending actions from resumed loop).
         set_transient('wpoc_session_' . $session_id, [
             'messages'        => $kernel->getMessages(),
             'pending_actions' => $kernel->getPendingActions(),
@@ -151,7 +156,7 @@ class AgentController {
         return new WP_REST_Response([
             'success'    => true,
             'session_id' => $session_id,
-            'result'     => $result,
+            'steps'      => $steps,
         ], 200);
     }
 }
