@@ -1,0 +1,57 @@
+name: Build Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Install dependencies (production only)
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Build plugin ZIP
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          PLUGIN_SLUG="wp-open-claw"
+
+          # Create a clean directory for the ZIP
+          mkdir -p build/$PLUGIN_SLUG
+
+          # Copy only plugin files (exclude dev/docs files)
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='docs' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='*.zip' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            ./ build/$PLUGIN_SLUG/
+
+          # Create ZIP
+          cd build
+          zip -r ../$PLUGIN_SLUG-$VERSION.zip $PLUGIN_SLUG/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wp-open-claw-*.zip
+          generate_release_notes: true
+          draft: false

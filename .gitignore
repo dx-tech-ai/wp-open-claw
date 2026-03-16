@@ -1,5 +1,6 @@
-# Dependencies (reinstall via: composer install)
-/vendor/
+# NOTE: /vendor/ is intentionally NOT excluded.
+# This allows users to download the ZIP from GitHub
+# and upload directly to WordPress without running "composer install".
 
 # IDE & Editors
 .idea/
@@ -17,5 +18,5 @@ Desktop.ini
 *.log
 debug.log
 
-# Composer lock (optional: remove this line if you want reproducible builds)
-# composer.lock
+# Build artifacts
+*.zip

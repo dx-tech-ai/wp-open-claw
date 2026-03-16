@@ -129,7 +129,7 @@ class OpenAIClient implements ClientInterface {
             if ($line === '' || $line === 'data: [DONE]') {
                 continue;
             }
-            if (str_starts_with($line, 'data: ')) {
+            if (substr($line, 0, 6) === 'data: ') {
                 $json = json_decode(substr($line, 6), true);
                 if (! $json) {
                     continue;

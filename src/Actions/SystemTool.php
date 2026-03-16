@@ -42,18 +42,24 @@ class SystemTool implements ToolInterface {
     public function execute(array $params): array {
         $target = sanitize_text_field($params['inspect_target'] ?? '');
 
-        return match ($target) {
-            'categories'     => $this->getCategories(),
-            'tags'           => $this->getTags(),
-            'active_plugins' => $this->getActivePlugins(),
-            'site_info'      => $this->getSiteInfo(),
-            'post_types'     => $this->getPostTypes(),
-            default          => [
-                'success' => false,
-                'data'    => null,
-                'message' => sprintf('Unknown inspect target: %s', $target),
-            ],
-        };
+        switch ($target) {
+            case 'categories':
+                return $this->getCategories();
+            case 'tags':
+                return $this->getTags();
+            case 'active_plugins':
+                return $this->getActivePlugins();
+            case 'site_info':
+                return $this->getSiteInfo();
+            case 'post_types':
+                return $this->getPostTypes();
+            default:
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => sprintf('Unknown inspect target: %s', $target),
+                ];
+        }
     }
 
     private function getCategories(): array {

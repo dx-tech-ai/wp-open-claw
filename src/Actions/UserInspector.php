@@ -52,12 +52,16 @@ class UserInspector implements ToolInterface {
     public function execute(array $params): array {
         $target = sanitize_text_field($params['target'] ?? '');
 
-        return match ($target) {
-            'list_users'    => $this->listUsers($params),
-            'get_user'      => $this->getUser($params),
-            'count_by_role' => $this->countByRole(),
-            default => ['success' => false, 'data' => null, 'message' => "Unknown target: {$target}"],
-        };
+        switch ($target) {
+            case 'list_users':
+                return $this->listUsers($params);
+            case 'get_user':
+                return $this->getUser($params);
+            case 'count_by_role':
+                return $this->countByRole();
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown target: {$target}"];
+        }
     }
 
     private function listUsers(array $p): array {

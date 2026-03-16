@@ -60,13 +60,18 @@ class MediaTool implements ToolInterface {
     public function execute(array $params): array {
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'upload_from_url'    => $this->uploadFromUrl($params),
-            'set_featured_image' => $this->setFeaturedImage($params),
-            'list_media'         => $this->listMedia($params),
-            'delete_media'       => $this->deleteMedia($params),
-            default => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'upload_from_url':
+                return $this->uploadFromUrl($params);
+            case 'set_featured_image':
+                return $this->setFeaturedImage($params);
+            case 'list_media':
+                return $this->listMedia($params);
+            case 'delete_media':
+                return $this->deleteMedia($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     private function uploadFromUrl(array $p): array {

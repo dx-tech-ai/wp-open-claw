@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WP Open Claw — AI Agent for WordPress</title>
+    <meta name="description" content="Autonomous AI Agent for WordPress — executes real actions instead of just generating text. 11 built-in tools, WooCommerce support, multi-LLM provider.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ─── Reset & Base ─── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0b0f;
+            --bg-secondary: #12131a;
+            --bg-card: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.06);
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-muted: #5f6368;
+            --accent-purple: #a855f7;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-pink: #ec4899;
+            --accent-orange: #f59e0b;
+            --gradient-primary: linear-gradient(135deg, #a855f7, #3b82f6, #06b6d4);
+            --gradient-glow: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(59,130,246,0.15), rgba(6,182,212,0.15));
+            --radius: 16px;
+            --radius-sm: 10px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─── Utilities ─── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .gradient-text {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+            background: rgba(168,85,247,0.1); color: var(--accent-purple);
+            border: 1px solid rgba(168,85,247,0.2);
+        }
+        .section-label {
+            font-size: 13px; font-weight: 600; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--accent-purple); margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: clamp(28px, 4vw, 42px); font-weight: 800;
+            line-height: 1.2; margin-bottom: 16px;
+        }
+        .section-desc {
+            font-size: 17px; color: var(--text-secondary); max-width: 640px;
+            line-height: 1.7;
+        }
+
+        /* ─── Ambient Glow Background ─── */
+        .glow-orb {
+            position: absolute; border-radius: 50%; filter: blur(120px);
+            pointer-events: none; opacity: 0.4;
+        }
+
+        /* ─── Navigation ─── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            padding: 16px 0;
+            background: rgba(10,11,15,0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        .nav.scrolled { padding: 10px 0; }
+        .nav-inner {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 18px; font-weight: 700; text-decoration: none; color: var(--text-primary);
+        }
+        .nav-logo svg { width: 32px; height: 32px; }
+        .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-cta {
+            padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            background: var(--gradient-primary); color: #fff; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(168,85,247,0.3); }
+        .nav-toggle { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; }
+
+        /* ─── Hero ─── */
+        .hero {
+            position: relative; min-height: 100vh; display: flex; align-items: center;
+            padding: 120px 0 80px; overflow: hidden;
+        }
+        .hero .glow-orb:nth-child(1) {
+            width: 600px; height: 600px; top: -200px; right: -100px;
+            background: radial-gradient(circle, rgba(168,85,247,0.3), transparent 70%);
+        }
+        .hero .glow-orb:nth-child(2) {
+            width: 500px; height: 500px; bottom: -100px; left: -100px;
+            background: radial-gradient(circle, rgba(6,182,212,0.2), transparent 70%);
+        }
+        .hero-content { position: relative; z-index: 2; text-align: center; }
+        .hero-badge { margin-bottom: 24px; }
+        .hero-title {
+            font-size: clamp(40px, 6vw, 72px); font-weight: 900;
+            line-height: 1.1; margin-bottom: 24px;
+            letter-spacing: -1.5px;
+        }
+        .hero-desc {
+            font-size: clamp(16px, 2vw, 20px); color: var(--text-secondary);
+            max-width: 600px; margin: 0 auto 40px; line-height: 1.7;
+        }
+        .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 600;
+            background: var(--gradient-primary); color: #fff; text-decoration: none;
+            transition: all 0.3s; border: none; cursor: pointer;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.4); }
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 600;
+            background: rgba(255,255,255,0.05); color: var(--text-primary); text-decoration: none;
+            border: 1px solid var(--border); transition: all 0.3s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); }
+
+        .hero-stats {
+            display: flex; justify-content: center; gap: 48px; margin-top: 64px;
+            padding-top: 40px; border-top: 1px solid var(--border);
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat-value { font-size: 36px; font-weight: 800; }
+        .hero-stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+        /* ─── Terminal Demo ─── */
+        .demo-section { padding: 40px 0 100px; }
+        .terminal {
+            max-width: 800px; margin: 0 auto;
+            background: rgba(18,19,26,0.9); border-radius: var(--radius);
+            border: 1px solid var(--border); overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+        }
+        .terminal-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 14px 18px; background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid var(--border);
+        }
+        .terminal-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+        }
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #febc2e; }
+        .terminal-dot.green { background: #28c840; }
+        .terminal-title {
+            flex: 1; text-align: center; font-size: 13px;
+            color: var(--text-muted); font-family: var(--mono);
+        }
+        .terminal-body { padding: 24px; font-family: var(--mono); font-size: 14px; line-height: 2; }
+        .terminal-line { opacity: 0; animation: typeLine 0.4s ease forwards; }
+        .terminal-line .prompt { color: var(--accent-green); }
+        .terminal-line .cmd { color: var(--text-primary); }
+        .terminal-line .comment { color: var(--text-muted); }
+        .terminal-line .tool { color: var(--accent-cyan); }
+        .terminal-line .result { color: var(--accent-purple); }
+        .terminal-line .confirm { color: var(--accent-orange); }
+
+        @keyframes typeLine {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Features ─── */
+        .features { padding: 100px 0; position: relative; }
+        .features-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px; margin-top: 48px;
+        }
+        .feature-card {
+            padding: 32px; border-radius: var(--radius);
+            background: var(--bg-card); border: 1px solid var(--border);
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gradient-primary); opacity: 0; transition: opacity 0.3s;
+        }
+        .feature-card:hover { border-color: rgba(168,85,247,0.2); transform: translateY(-4px); }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 20px;
+        }
+        .feature-icon.purple { background: rgba(168,85,247,0.1); }
+        .feature-icon.blue   { background: rgba(59,130,246,0.1); }
+        .feature-icon.cyan   { background: rgba(6,182,212,0.1); }
+        .feature-icon.green  { background: rgba(16,185,129,0.1); }
+        .feature-icon.pink   { background: rgba(236,72,153,0.1); }
+        .feature-icon.orange { background: rgba(245,158,11,0.1); }
+        .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ─── Tools ─── */
+        .tools { padding: 100px 0; position: relative; }
+        .tools-tabs {
+            display: flex; gap: 8px; margin: 40px 0 32px; flex-wrap: wrap;
+        }
+        .tools-tab {
+            padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            background: rgba(255,255,255,0.04); color: var(--text-secondary);
+            border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+        }
+        .tools-tab.active { background: rgba(168,85,247,0.15); color: var(--accent-purple); border-color: rgba(168,85,247,0.3); }
+        .tools-tab:hover:not(.active) { background: rgba(255,255,255,0.06); }
+        .tools-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 16px;
+        }
+        .tool-card {
+            display: flex; gap: 16px; padding: 20px; border-radius: var(--radius-sm);
+            background: var(--bg-card); border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        .tool-card:hover { border-color: rgba(168,85,247,0.2); }
+        .tool-card.hidden { display: none; }
+        .tool-num {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 700;
+            background: rgba(168,85,247,0.1); color: var(--accent-purple);
+        }
+        .tool-num.woo { background: rgba(16,185,129,0.1); color: var(--accent-green); }
+        .tool-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .tool-info .tool-fn { font-family: var(--mono); font-size: 12px; color: var(--accent-cyan); margin-bottom: 6px; }
+        .tool-info p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+        /* ─── Architecture ─── */
+        .architecture { padding: 100px 0; }
+        .arch-flow {
+            margin-top: 48px; padding: 40px; border-radius: var(--radius);
+            background: var(--bg-card); border: 1px solid var(--border);
+            font-family: var(--mono); font-size: 14px; overflow-x: auto;
+        }
+        .arch-flow pre {
+            color: var(--text-secondary); white-space: pre;
+            line-height: 1.8;
+        }
+        .arch-flow .hl { color: var(--accent-purple); font-weight: 600; }
+        .arch-flow .hl2 { color: var(--accent-cyan); }
+        .arch-flow .hl3 { color: var(--accent-green); }
+        .arch-flow .hl4 { color: var(--accent-orange); }
+
+        /* ─── Providers ─── */
+        .providers { padding: 100px 0; }
+        .providers-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px; margin-top: 48px;
+        }
+        .provider-card {
+            padding: 32px; border-radius: var(--radius);
+            background: var(--bg-card); border: 1px solid var(--border);
+            text-align: center; transition: all 0.3s;
+        }
+        .provider-card:hover { border-color: rgba(168,85,247,0.2); transform: translateY(-4px); }
+        .provider-logo {
+            width: 60px; height: 60px; margin: 0 auto 20px;
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+        }
+        .provider-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .provider-card .provider-models {
+            font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;
+        }
+        .provider-free {
+            display: inline-block; padding: 4px 12px; border-radius: 6px;
+            font-size: 12px; font-weight: 600;
+        }
+        .provider-free.yes { background: rgba(16,185,129,0.1); color: var(--accent-green); }
+        .provider-free.no { background: rgba(245,158,11,0.1); color: var(--accent-orange); }
+
+        /* ─── Install ─── */
+        .install { padding: 100px 0; }
+        .install-steps {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px; margin-top: 48px;
+        }
+        .install-step {
+            text-align: center; padding: 32px 20px; border-radius: var(--radius);
+            background: var(--bg-card); border: 1px solid var(--border);
+        }
+        .install-step-num {
+            width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800;
+            background: var(--gradient-primary); color: #fff;
+        }
+        .install-step h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .install-step p { font-size: 14px; color: var(--text-secondary); }
+        .install-code {
+            margin-top: 40px; padding: 24px; border-radius: var(--radius-sm);
+            background: rgba(18,19,26,0.9); border: 1px solid var(--border);
+            font-family: var(--mono); font-size: 14px; overflow-x: auto;
+        }
+        .install-code pre { color: var(--text-secondary); line-height: 2; }
+        .install-code .hlc { color: var(--text-muted); }
+        .install-code .hlg { color: var(--accent-green); }
+
+        /* ─── CTA ─── */
+        .cta {
+            padding: 100px 0; text-align: center; position: relative;
+        }
+        .cta-box {
+            padding: 64px 40px; border-radius: 24px;
+            background: var(--gradient-glow);
+            border: 1px solid rgba(168,85,247,0.15);
+            position: relative; overflow: hidden;
+        }
+        .cta-box .glow-orb {
+            width: 400px; height: 400px; top: -200px; right: -100px;
+            background: radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%);
+        }
+        .cta-box h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; margin-bottom: 16px; position: relative; z-index: 2; }
+        .cta-box p { font-size: 18px; color: var(--text-secondary); margin-bottom: 32px; position: relative; z-index: 2; }
+        .cta-box .hero-actions { position: relative; z-index: 2; }
+
+        /* ─── Footer ─── */
+        .footer {
+            padding: 40px 0; border-top: 1px solid var(--border);
+            text-align: center; color: var(--text-muted); font-size: 14px;
+        }
+        .footer a { color: var(--accent-purple); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* ─── Animations ─── */
+        .reveal {
+            opacity: 0; transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .nav-toggle { display: block; }
+            .nav-links.open {
+                display: flex; flex-direction: column; gap: 16px;
+                position: absolute; top: 100%; left: 0; right: 0;
+                background: rgba(10,11,15,0.95); padding: 24px;
+                backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+            }
+            .hero-stats { flex-direction: column; gap: 24px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .tools-grid { grid-template-columns: 1fr; }
+            .providers-grid { grid-template-columns: 1fr; }
+            .install-steps { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="container nav-inner">
+            <a href="#" class="nav-logo">
+                <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="url(#g1)" stroke-width="2"/><path d="M10 20l6-12 6 12" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="13" r="2" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#a855f7"/><stop offset="0.5" stop-color="#3b82f6"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
+                Open Claw
+            </a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#tools">Tools</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#providers">Providers</a></li>
+                <li><a href="#install">Install</a></li>
+            </ul>
+            <a href="https://github.com/dx-tech-ai/wp-open-claw" class="nav-cta">⭐ GitHub</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero" id="hero">
+        <div class="glow-orb"></div>
+        <div class="glow-orb"></div>
+        <div class="container hero-content">
+            <div class="hero-badge">
+                <span class="badge">🚀 v1.0.0 — Open Source & Free</span>
+            </div>
+            <h1 class="hero-title">
+                AI Agent that<br>
+                <span class="gradient-text">Actually Acts</span>
+            </h1>
+            <p class="hero-desc">
+                WP Open Claw is an autonomous AI Agent for WordPress. It doesn't just answer questions — it <strong>executes real actions</strong> on your site using a ReAct loop.
+            </p>
+            <div class="hero-actions">
+                <a href="https://github.com/dx-tech-ai/wp-open-claw" class="btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    Get Started
+                </a>
+                <a href="#demo" class="btn-secondary">
+                    ▶ See Demo
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value gradient-text">11</div>
+                    <div class="hero-stat-label">Built-in Tools</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value gradient-text">3</div>
+                    <div class="hero-stat-label">LLM Providers</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value gradient-text">∞</div>
+                    <div class="hero-stat-label">Chain Actions</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value gradient-text">0đ</div>
+                    <div class="hero-stat-label">Plugin Cost</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Terminal Demo -->
+    <section class="demo-section" id="demo">
+        <div class="container">
+            <div class="terminal reveal">
+                <div class="terminal-header">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">Open Claw — Ctrl+G</span>
+                </div>
+                <div class="terminal-body" id="terminalBody">
+                    <div class="terminal-line" style="animation-delay: 0.2s"><span class="prompt">You › </span><span class="cmd">Tạo danh mục Thời Trang rồi thêm 3 sản phẩm áo thun vào</span></div>
+                    <div class="terminal-line" style="animation-delay: 0.8s"><span class="comment">💭 Thinking: Cần tạo category → rồi tạo 3 products...</span></div>
+                    <div class="terminal-line" style="animation-delay: 1.4s"><span class="tool">🔧 woo_product_manager</span> <span class="comment">→ create_category("Thời Trang")</span></div>
+                    <div class="terminal-line" style="animation-delay: 2.0s"><span class="confirm">⚡ Confirm?</span> <span class="result">[✓ Approved]</span></div>
+                    <div class="terminal-line" style="animation-delay: 2.6s"><span class="result">✅ Danh mục "Thời Trang" đã tạo (ID: 42)</span></div>
+                    <div class="terminal-line" style="animation-delay: 3.2s"><span class="comment">💭 Continuing: Tạo 3 sản phẩm áo thun cho category ID 42...</span></div>
+                    <div class="terminal-line" style="animation-delay: 3.8s"><span class="tool">🔧 woo_product_manager</span> <span class="comment">→ create("Áo Thun Basic White", 250000)</span></div>
+                    <div class="terminal-line" style="animation-delay: 4.4s"><span class="confirm">⚡ Confirm?</span> <span class="result">[✓ Approved]</span></div>
+                    <div class="terminal-line" style="animation-delay: 5.0s"><span class="result">✅ 3 sản phẩm đã được tạo thành công!</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Features</p>
+                <h2 class="section-title">An Agent, Not a Chatbot</h2>
+                <p class="section-desc">Open Claw doesn't just generate text — it reasons, plans, and executes real WordPress actions in a continuous loop.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-icon purple">🧠</div>
+                    <h3>ReAct Loop Engine</h3>
+                    <p>Reason → Act → Observe → Repeat. The agent thinks step by step, calling appropriate tools and adapting based on results.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon blue">🔗</div>
+                    <h3>Chain Actions</h3>
+                    <p>Execute multi-step workflows automatically. Create a category, then populate it with products — all in one conversation.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon cyan">✅</div>
+                    <h3>Smart Confirmation</h3>
+                    <p>Dynamic Confirmation system — read actions execute instantly, write actions pause for your approval. You're always in control.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon green">🛒</div>
+                    <h3>WooCommerce Ready</h3>
+                    <p>Auto-detects WooCommerce and activates 3 additional tools for product, order, and customer management.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon pink">🌐</div>
+                    <h3>Web Research</h3>
+                    <p>Built-in web search via DuckDuckGo (free, no key) or Google Custom Search. Research and create content in one flow.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon orange">💾</div>
+                    <h3>Session Persistence</h3>
+                    <p>Conversation state is saved via WordPress transients. Resume multi-step tasks after confirming each action.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tools -->
+    <section class="tools" id="tools">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Tools</p>
+                <h2 class="section-title">11 Built-in Tools</h2>
+                <p class="section-desc">Every tool follows the same interface: schema for the LLM, smart confirmation, and structured observation output.</p>
+            </div>
+            <div class="tools-tabs reveal">
+                <button class="tools-tab active" data-tab="all">All (11)</button>
+                <button class="tools-tab" data-tab="wp">WordPress (8)</button>
+                <button class="tools-tab" data-tab="woo">WooCommerce (3)</button>
+            </div>
+            <div class="tools-grid reveal">
+                <div class="tool-card" data-type="wp"><div class="tool-num">1</div><div class="tool-info"><h4>Content Manager</h4><p class="tool-fn">wp_content_manager</p><p>Create/update posts with categories, tags, and HTML content</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">2</div><div class="tool-info"><h4>System Inspector</h4><p class="tool-fn">wp_system_inspector</p><p>View site info, active plugins, categories, tags, post types</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">3</div><div class="tool-info"><h4>Web Research</h4><p class="tool-fn">web_research_tool</p><p>Search the web via DuckDuckGo or Google Custom Search</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">4</div><div class="tool-info"><h4>Taxonomy Manager</h4><p class="tool-fn">wp_taxonomy_manager</p><p>Create/update/delete categories & tags</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">5</div><div class="tool-info"><h4>Media Manager</h4><p class="tool-fn">wp_media_manager</p><p>Upload images from URL, set featured images, list/delete media</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">6</div><div class="tool-info"><h4>Page Manager</h4><p class="tool-fn">wp_page_manager</p><p>Create/update/delete pages with templates & sub-page support</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">7</div><div class="tool-info"><h4>User Inspector</h4><p class="tool-fn">wp_user_inspector</p><p>List users, view details, stats by role</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">8</div><div class="tool-info"><h4>Analytics Reader</h4><p class="tool-fn">wp_analytics_reader</p><p>Post stats, comment stats, content summary, recent posts</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">9</div><div class="tool-info"><h4>Product Manager</h4><p class="tool-fn">woo_product_manager</p><p>Full CRUD — name, price, SKU, stock, images, product categories</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">10</div><div class="tool-info"><h4>Order Inspector</h4><p class="tool-fn">woo_order_inspector</p><p>List/view orders, update status, revenue statistics by period</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">11</div><div class="tool-info"><h4>Customer Inspector</h4><p class="tool-fn">woo_customer_inspector</p><p>List/search customers, customer stats, top spenders</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="architecture" id="architecture">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Architecture</p>
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-desc">Built on a clean ReAct loop with session persistence, smart confirmation, and automatic site context injection.</p>
+            </div>
+            <div class="arch-flow reveal">
+                <pre>
+  <span class="hl">User Input</span>  ─────►  <span class="hl">Kernel.handle()</span>
+                          │
+                          ▼
+                 <span class="hl2">System Prompt</span>
+                 + <span class="hl2">ContextProvider</span> (auto site snapshot)
+                          │
+                          ▼
+              ┌─── <span class="hl">LLM Chat</span> (OpenAI / Gemini / Anthropic) ───┐
+              │                                                    │
+              ▼                                                    ▼
+      <span class="hl3">Text Response</span>                                    <span class="hl4">Tool Call</span>
+      → Return to user                               → Manager.dispatch()
+                                                            │
+                                              ┌─────────────┴──────────────┐
+                                              ▼                            ▼
+                                      <span class="hl3">Read-only</span>                   <span class="hl4">Write action</span>
+                                      Execute immediately         Pending Confirmation
+                                      → Observation                      │
+                                      → Continue loop           ┌───────┴───────┐
+                                                                ▼               ▼
+                                                           <span class="hl3">Approve</span>         <span class="hl4">Reject</span>
+                                                           → Execute        → Stop
+                                                           → <span class="hl">Resume loop</span>
+                </pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Providers -->
+    <section class="providers" id="providers">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">LLM Providers</p>
+                <h2 class="section-title">Choose Your AI Engine</h2>
+                <p class="section-desc">Switch between providers anytime. All models support function calling for tool execution.</p>
+            </div>
+            <div class="providers-grid">
+                <div class="provider-card reveal">
+                    <div class="provider-logo" style="background: rgba(59,130,246,0.1);">🔵</div>
+                    <h3>Google Gemini</h3>
+                    <p class="provider-models">Gemini 2.5 Flash · Flash Lite<br>Gemini 2.5 Pro · 2.0 Flash Lite</p>
+                    <span class="provider-free yes">✓ Free Tier Available</span>
+                </div>
+                <div class="provider-card reveal">
+                    <div class="provider-logo" style="background: rgba(16,185,129,0.1);">🟢</div>
+                    <h3>OpenAI</h3>
+                    <p class="provider-models">GPT-4o · GPT-4o Mini<br>GPT-4 Turbo</p>
+                    <span class="provider-free no">Paid API</span>
+                </div>
+                <div class="provider-card reveal">
+                    <div class="provider-logo" style="background: rgba(236,72,153,0.1);">🟣</div>
+                    <h3>Anthropic</h3>
+                    <p class="provider-models">Claude Sonnet 4<br>Claude 3.5 Haiku</p>
+                    <span class="provider-free no">Paid API</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Install -->
+    <section class="install" id="install">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Get Started</p>
+                <h2 class="section-title">Up & Running in 4 Steps</h2>
+            </div>
+            <div class="install-steps">
+                <div class="install-step reveal">
+                    <div class="install-step-num">1</div>
+                    <h4>Download ZIP</h4>
+                    <p>Get the latest release from<br><a href="https://github.com/dx-tech-ai/wp-open-claw/releases" style="color:var(--accent-cyan)">GitHub Releases</a></p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">2</div>
+                    <h4>Upload to WordPress</h4>
+                    <p>WP Admin → Plugins →<br>Add New → Upload Plugin</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">3</div>
+                    <h4>Configure API Key</h4>
+                    <p>Open Claw menu →<br>add your LLM API key</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">4</div>
+                    <h4>Launch!</h4>
+                    <p>Press <kbd>Ctrl+G</kbd> on any<br>admin page to start</p>
+                </div>
+            </div>
+            <div class="install-code reveal">
+                <pre><span class="hlc"># Or install via Git (for developers)</span>
+<span class="hlg">$</span> cd /path/to/wp-content/plugins/
+<span class="hlg">$</span> git clone https://github.com/dx-tech-ai/wp-open-claw.git
+
+<span class="hlc"># Dependencies are included — no composer install needed!</span>
+<span class="hlc"># Just activate in WP Admin and press Ctrl+G</span></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-box reveal">
+                <div class="glow-orb"></div>
+                <h2>Ready to Give Your WordPress<br><span class="gradient-text">Superpowers?</span></h2>
+                <p>Free, open source, and ready to deploy. Start with Gemini's free tier today.</p>
+                <div class="hero-actions">
+                    <a href="https://github.com/dx-tech-ai/wp-open-claw" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        Star on GitHub
+                    </a>
+                    <a href="https://github.com/dx-tech-ai/wp-open-claw/releases" class="btn-secondary">
+                        📦 Download Latest
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Made with ❤️ by <a href="https://github.com/dx-tech-ai">DX Tech AI</a> · GPLv2 License · WordPress 6.4+ · PHP 7.4+</p>
+        </div>
+    </footer>
+
+    <script>
+        // ─── Scroll reveal ───
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        // ─── Navbar scroll ───
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // ─── Mobile menu toggle ───
+        const navToggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+        navToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('open');
+        });
+
+        // ─── Tools tab filter ───
+        const tabs = document.querySelectorAll('.tools-tab');
+        const toolCards = document.querySelectorAll('.tool-card');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const filter = tab.dataset.tab;
+                toolCards.forEach(card => {
+                    if (filter === 'all') {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.toggle('hidden', card.dataset.type !== filter);
+                    }
+                });
+            });
+        });
+
+        // ─── Smooth scroll for nav links ───
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    navLinks.classList.remove('open');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
