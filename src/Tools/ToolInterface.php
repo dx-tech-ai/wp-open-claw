@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Tools;
 
+defined('ABSPATH') || exit;
+
 /**
  * Contract for all Claw tools.
  *

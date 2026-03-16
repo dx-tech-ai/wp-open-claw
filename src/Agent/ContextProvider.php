@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Agent;
 
+defined('ABSPATH') || exit;
+
 /**
  * Context Provider — builds a "site snapshot" for the LLM.
  *

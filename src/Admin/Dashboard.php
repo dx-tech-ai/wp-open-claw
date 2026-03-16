@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Admin;
 
+defined('ABSPATH') || exit;
+
 /**
  * Admin Dashboard — enqueues Command Palette assets in WP-Admin only.
  */

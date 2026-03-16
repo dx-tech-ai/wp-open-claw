@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\REST;
 
+defined('ABSPATH') || exit;
+
 use OpenClaw\Agent\Kernel;
 use WP_REST_Request;
 use WP_REST_Response;

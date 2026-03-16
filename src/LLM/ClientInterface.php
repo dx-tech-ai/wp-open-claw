@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\LLM;
 
+defined('ABSPATH') || exit;
+
 use Generator;
 
 /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw;
 
+defined('ABSPATH') || exit;
+
 /**
  * Fired during plugin activation.
  */
@@ -16,10 +18,10 @@ class Activator {
     }
 
     private static function check_requirements(): void {
-        if (version_compare(PHP_VERSION, '8.1', '<')) {
+        if (version_compare(PHP_VERSION, '7.4', '<')) {
             deactivate_plugins(WPOC_BASENAME);
             wp_die(
-                esc_html__('WP Open Claw requires PHP 8.1 or higher.', 'wp-open-claw'),
+                esc_html__('WP Open Claw requires PHP 7.4 or higher.', 'wp-open-claw'),
                 'Plugin Activation Error',
                 ['back_link' => true]
             );
