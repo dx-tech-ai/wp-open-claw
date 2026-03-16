@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw;
 
+defined('ABSPATH') || exit;
+
 /**
  * Fired during plugin deactivation.
  */

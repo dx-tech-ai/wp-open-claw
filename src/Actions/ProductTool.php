@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Actions;
 
+defined('ABSPATH') || exit;
+
 use OpenClaw\Tools\ToolInterface;
 use OpenClaw\Tools\DynamicConfirmInterface;
 

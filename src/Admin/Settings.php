@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Admin;
 
+defined('ABSPATH') || exit;
+
 /**
  * Plugin settings page — API keys, provider selection, model config.
  */

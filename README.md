@@ -1,5 +1,7 @@
 # WP Open Claw
 
+🌐 [English](README-en.md) | **Tiếng Việt**
+
 > AI Agent tự trị cho WordPress — thực thi hành động thay vì chỉ trả lời văn bản.
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.4%2B-blue.svg)](https://wordpress.org)

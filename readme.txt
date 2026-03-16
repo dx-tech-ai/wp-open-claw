@@ -1,6 +1,6 @@
 === WP Open Claw ===
-Contributors: DIGITAL X-SOLUTION TECHNOLOGY
-Tags: ai, agent, automation, gemini, openai, chatgpt, wordpress-ai, woocommerce
+Contributors: WordPress.org DIGITAL X-SOLUTION TECHNOLOGY
+Tags: ai, agent, automation, woocommerce, chatbot
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 7.4
@@ -103,6 +103,40 @@ Choose one of three providers:
 
 = Agent Settings =
 * **Max Iterations** — Maximum ReAct loop iterations (1–20, default: 10)
+
+== External Services ==
+
+This plugin connects to third-party AI and search services to provide its core functionality. **No data is sent to any external service until the user explicitly configures an API key and initiates a request.**
+
+= OpenAI API =
+When OpenAI is selected as the AI provider, user prompts and WordPress site context are sent to the OpenAI API for processing.
+* Service URL: [https://api.openai.com](https://api.openai.com)
+* Terms of Use: [https://openai.com/terms](https://openai.com/terms)
+* Privacy Policy: [https://openai.com/privacy](https://openai.com/privacy)
+
+= Google Gemini (AI Studio) =
+When Gemini is selected as the AI provider, user prompts and WordPress site context are sent to the Google Generative AI API.
+* Service URL: [https://generativelanguage.googleapis.com](https://generativelanguage.googleapis.com)
+* Terms of Use: [https://ai.google.dev/terms](https://ai.google.dev/terms)
+* Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)
+
+= Anthropic (Claude) =
+When Anthropic is selected as the AI provider, user prompts and WordPress site context are sent to the Anthropic API.
+* Service URL: [https://api.anthropic.com](https://api.anthropic.com)
+* Terms of Use: [https://www.anthropic.com/terms](https://www.anthropic.com/terms)
+* Privacy Policy: [https://www.anthropic.com/privacy](https://www.anthropic.com/privacy)
+
+= DuckDuckGo Search =
+The web research tool uses DuckDuckGo's HTML search as the default search provider. Search queries are sent when the AI agent decides to perform web research.
+* Service URL: [https://html.duckduckgo.com](https://html.duckduckgo.com)
+* Terms of Use: [https://duckduckgo.com/terms](https://duckduckgo.com/terms)
+* Privacy Policy: [https://duckduckgo.com/privacy](https://duckduckgo.com/privacy)
+
+= Google Custom Search =
+When configured, the web research tool can use Google Custom Search API instead of DuckDuckGo. Search queries are sent to the Google API.
+* Service URL: [https://www.googleapis.com/customsearch](https://www.googleapis.com/customsearch)
+* Terms of Use: [https://developers.google.com/terms](https://developers.google.com/terms)
+* Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)
 
 == Frequently Asked Questions ==
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenClaw\Agent;
 
+defined('ABSPATH') || exit;
+
 use OpenClaw\LLM\ClientInterface;
 use OpenClaw\LLM\OpenAIClient;
 use OpenClaw\LLM\AnthropicClient;
