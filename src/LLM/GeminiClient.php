@@ -264,11 +264,17 @@ class GeminiClient implements ClientInterface {
         }
 
         $finishReason = $candidate['finishReason'] ?? null;
-        $mappedReason = match ($finishReason) {
-            'STOP'  => 'stop',
-            'MAX_TOKENS' => 'length',
-            default => $finishReason,
-        };
+        switch ($finishReason) {
+            case 'STOP':
+                $mappedReason = 'stop';
+                break;
+            case 'MAX_TOKENS':
+                $mappedReason = 'length';
+                break;
+            default:
+                $mappedReason = $finishReason;
+                break;
+        }
 
         // If there are tool calls, set finish_reason to 'tool_calls' for Kernel compatibility.
         if (! empty($toolCalls)) {

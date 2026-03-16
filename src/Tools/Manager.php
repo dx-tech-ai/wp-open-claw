@@ -109,9 +109,11 @@ class Manager {
     /**
      * Execute a tool directly (after confirmation or for read-only tools).
      *
+     * @param ToolInterface|string $tool
+     * @param array $params
      * @return array{success: bool, data: mixed, message: string}
      */
-    public function executeDirectly(ToolInterface|string $tool, array $params): array {
+    public function executeDirectly($tool, array $params): array {
         if (is_string($tool)) {
             $tool = $this->get($tool);
             if (! $tool) {

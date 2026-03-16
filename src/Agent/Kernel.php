@@ -44,11 +44,17 @@ class Kernel {
 
         // Initialize LLM client based on provider setting.
         $provider = $settings['llm_provider'] ?? 'openai';
-        $this->llm = match ($provider) {
-            'anthropic' => new AnthropicClient(),
-            'gemini'    => new GeminiClient(),
-            default     => new OpenAIClient(),
-        };
+        switch ($provider) {
+            case 'anthropic':
+                $this->llm = new AnthropicClient();
+                break;
+            case 'gemini':
+                $this->llm = new GeminiClient();
+                break;
+            default:
+                $this->llm = new OpenAIClient();
+                break;
+        }
 
         $this->maxIterations = absint($settings['max_iterations'] ?? 10);
 

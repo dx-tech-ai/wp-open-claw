@@ -1,97 +1,153 @@
 === WP Open Claw ===
 Contributors: DIGITAL X-SOLUTION TECHNOLOGY
-Tags: ai, agent, automation, gemini, openai, chatgpt, wordpress-ai
-Requires at least: 6.0
+Tags: ai, agent, automation, gemini, openai, chatgpt, wordpress-ai, woocommerce
+Requires at least: 6.4
 Tested up to: 6.7
-Requires PHP: 8.1
+Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI Agent tự trị cho WordPress — thực thi hành động thay vì chỉ trả lời văn bản.
+Autonomous AI Agent for WordPress — executes real actions instead of just generating text.
 
 == Description ==
 
-**WP Open Claw** là một AI Agent plugin cho WordPress, hoạt động dựa trên vòng lặp ReAct (Reason + Act). Agent không chỉ trả lời câu hỏi mà còn **thực thi hành động trực tiếp** trên site WordPress của bạn.
+**WP Open Claw** is an AI Agent plugin for WordPress, powered by a ReAct (Reason + Act) loop. The Agent doesn't just answer questions — it **executes actions directly** on your WordPress site.
 
-= Tính năng chính =
+= Key Features =
 
-* 🤖 **Command Palette** — Mở bằng `Ctrl+G`, giao diện chat hiện đại
-* 🧠 **ReAct Loop** — Agent tự suy luận và chọn tool phù hợp
-* ✅ **Confirm trước khi thực thi** — Các hành động thay đổi dữ liệu cần xác nhận
-* 🔌 **Đa LLM Provider** — Hỗ trợ OpenAI, Google Gemini, Anthropic Claude
+* 🤖 **Command Palette** — Open with `Ctrl+G`, modern glassmorphism chat interface
+* 🧠 **ReAct Loop** — Agent reasons, selects tools, executes, observes results, and continues
+* ✅ **Confirm Before Executing** — Data-changing actions require user confirmation
+* 🔗 **Chain Actions** — Automatically performs sequential actions (e.g., create category then create multiple products)
+* 🔌 **Multi LLM Provider** — Supports OpenAI (GPT-4o), Google Gemini (2.5 Flash/Pro), Anthropic Claude (Sonnet 4)
+* 🛒 **WooCommerce Ready** — Auto-detects WooCommerce and activates product, order, and customer management tools
+* 💾 **Session Persistence** — Saves session state to resume after action confirmation
+* 🔍 **Web Research** — Built-in web search via DuckDuckGo (free) or Google Custom Search
 
-= 8 Tools tích hợp =
+= 11 Built-in Tools =
 
-1. **Content Manager** — Tạo/cập nhật bài viết
-2. **System Inspector** — Xem thông tin site, plugins, categories
-3. **Web Research** — Tìm kiếm web qua DuckDuckGo/Google
-4. **Taxonomy Manager** — Tạo/sửa/xóa categories & tags
-5. **Media Manager** — Upload ảnh từ URL, set featured image
-6. **Page Manager** — Tạo/sửa/xóa Pages
-7. **User Inspector** — Xem thông tin users
-8. **Analytics Reader** — Thống kê bài viết, comments, tổng quan site
+**WordPress Core (8 tools):**
 
-= Ví dụ sử dụng =
+1. **Content Manager** (`wp_content_manager`) — Create/update posts with categories, tags, and HTML content
+2. **System Inspector** (`wp_system_inspector`) — View site info, active plugins, categories, tags, post types
+3. **Web Research** (`web_research_tool`) — Search the web via DuckDuckGo (free) or Google Custom Search
+4. **Taxonomy Manager** (`wp_taxonomy_manager`) — Create/update/delete categories & tags
+5. **Media Manager** (`wp_media_manager`) — Upload images from URL, set featured images, list/delete media
+6. **Page Manager** (`wp_page_manager`) — Create/update/delete/list pages, supports templates & sub-pages
+7. **User Inspector** (`wp_user_inspector`) — List users, view details, count by role
+8. **Analytics Reader** (`wp_analytics_reader`) — Post stats by status, comment stats, content summary
 
-* "Tạo category Công Nghệ"
-* "Viết bài về AI trends 2025, lưu draft"
-* "Tìm kiếm về WordPress performance và viết bài tổng hợp"
-* "Cho tôi xem thống kê bài viết trên site"
-* "Tạo page About Us với nội dung giới thiệu công ty"
+**WooCommerce (3 tools — auto-activated when WooCommerce is active):**
+
+9. **Product Manager** (`woo_product_manager`) — Full product CRUD (name, price, SKU, stock, images), manage product categories
+10. **Order Inspector** (`woo_order_inspector`) — List/view orders, update status, revenue statistics
+11. **Customer Inspector** (`woo_customer_inspector`) — List/search customers, customer stats, top customers
+
+= Architecture =
+
+* **ReAct Loop Engine** (`Kernel`) — Reason→Act→Observe loop with configurable max iterations
+* **Dynamic Confirmation** — Mixed read/write tools only require confirmation for write actions
+* **Context Provider** — Auto-injects site snapshot (categories, post types, user) into LLM context
+* **Auto-Discovery** — Automatically discovers and registers tools from the `Actions/` directory
+* **REST API** — Two endpoints: `/agent/chat` and `/agent/confirm` with session management
+
+= Usage Examples =
+
+**WordPress:**
+* "Create a Technology category"
+* "Write a blog post about AI trends 2025, save as draft"
+* "Search the web for WordPress performance tips and write a summary post"
+* "Show me site post statistics"
+* "Create an About Us page with company introduction content"
+* "Upload an image from URL and set it as featured image for the post"
+
+**WooCommerce:**
+* "Create 3 T-shirt products priced at 250,000"
+* "Create a Fashion product category, then add 5 products to it"
+* "Show me this month's revenue"
+* "Update order #123 status to completed"
+* "Find customers with 'gmail' in their email"
+* "Show me the top 5 customers by total spending"
 
 == Installation ==
 
-1. Upload thư mục `wp-open-claw` vào `/wp-content/plugins/`
-2. Chạy `composer install` trong thư mục plugin
-3. Kích hoạt plugin trong WP Admin → Plugins
-4. Vào **Open Claw** trong menu admin → cấu hình API key
-5. Nhấn `Ctrl+G` trên bất kỳ trang admin nào để bắt đầu
+**Method 1: ZIP Upload (Recommended)**
+1. Download the latest ZIP from [GitHub Releases](https://github.com/dx-tech-ai/wp-open-claw/releases)
+2. In WP Admin → Plugins → Add New → Upload Plugin
+3. Choose the downloaded ZIP file and click Install Now
+4. Activate the plugin
+5. Go to **Open Claw** in the admin menu → configure your API key
+6. Press `Ctrl+G` on any admin page to start using the agent
+
+**Method 2: Manual Upload**
+1. Download and extract the ZIP to `/wp-content/plugins/`
+2. Activate the plugin in WP Admin → Plugins
+3. Configure your API key in the Open Claw settings page
 
 == Configuration ==
 
 = LLM Provider =
-Chọn một trong ba provider:
+Choose one of three providers:
 
-* **Google Gemini (AI Studio)** — Miễn phí tại [aistudio.google.com](https://aistudio.google.com/apikey)
-* **OpenAI** — Cần API key từ [platform.openai.com](https://platform.openai.com)
-* **Anthropic** — Cần API key từ [console.anthropic.com](https://console.anthropic.com)
+* **Google Gemini (AI Studio)** — Free tier available at [aistudio.google.com](https://aistudio.google.com/apikey)
+  * Models: Gemini 2.5 Flash (Free), Gemini 2.5 Flash Lite (Free), Gemini 2.5 Pro Preview, Gemini 2.0 Flash Lite
+* **OpenAI** — API key required from [platform.openai.com](https://platform.openai.com)
+  * Models: GPT-4o, GPT-4o Mini, GPT-4 Turbo
+* **Anthropic** — API key required from [console.anthropic.com](https://console.anthropic.com)
+  * Models: Claude Sonnet 4, Claude 3.5 Haiku
 
 = Web Search =
-* Mặc định dùng **DuckDuckGo** (miễn phí, không cần key)
-* Tùy chọn: Google Custom Search (cần API key + CX)
+* Default: **DuckDuckGo** (free, no API key required)
+* Optional: Google Custom Search (requires API key + Search Engine ID)
+
+= Agent Settings =
+* **Max Iterations** — Maximum ReAct loop iterations (1–20, default: 10)
 
 == Frequently Asked Questions ==
 
-= Plugin có miễn phí không? =
-Plugin hoàn toàn miễn phí và mã nguồn mở. Tuy nhiên bạn cần API key từ LLM provider (Gemini có free tier).
+= Is the plugin free? =
+The plugin is completely free and open source. However, you need an API key from an LLM provider (Gemini offers a free tier).
 
-= Cần PHP version nào? =
-Yêu cầu PHP 8.1 trở lên.
+= What PHP version is required? =
+PHP 7.4 or higher is required.
 
-= Agent có thể xóa dữ liệu không? =
-Tất cả hành động thay đổi dữ liệu (tạo/sửa/xóa) đều yêu cầu **xác nhận** từ người dùng trước khi thực thi.
+= Can the agent delete data? =
+All data-changing actions (create/update/delete) require **user confirmation** before execution. Mixed read/write tools use Dynamic Confirmation — only write actions need confirmation, while read actions execute immediately.
 
-= Có hỗ trợ Custom Post Type không? =
-Hiện tại hỗ trợ Posts và Pages. Custom Post Type sẽ được bổ sung trong phiên bản tương lai.
+= Does it support WooCommerce? =
+Yes! The plugin auto-detects WooCommerce and activates 3 additional tools: Product Manager, Order Inspector, and Customer Inspector.
+
+= Can the agent perform multiple consecutive actions? =
+Yes! The agent supports Chain Actions — after confirming an action, the agent automatically resumes the ReAct loop to perform subsequent actions (e.g., create category → create 3 products).
+
+= Does it support Custom Post Types? =
+Currently supports Posts, Pages, and WooCommerce Products. Custom Post Type support will be added in a future release.
 
 == Screenshots ==
 
-1. Command Palette với giao diện glassmorphism
-2. Agent thực thi hành động với thinking steps
-3. Trang cấu hình LLM Provider
+1. Command Palette with glassmorphism interface
+2. Agent executing chain actions with thinking steps
+3. LLM Provider and Agent Settings configuration page
+4. Action confirmation dialog before execution (Approve/Reject)
 
 == Changelog ==
 
 = 1.0.0 =
 * Initial release
-* 8 built-in tools
-* Support for OpenAI, Gemini, Anthropic
+* 11 built-in tools (8 WordPress core + 3 WooCommerce)
+* Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 * Command Palette UI with Ctrl+G shortcut
+* ReAct Loop engine with configurable max iterations
 * DuckDuckGo web search (free, no API key needed)
-* Action confirmation system
+* Action confirmation system with Dynamic Confirmation for mixed read/write tools
+* Chain action execution — agent resumes loop after confirmation
+* Session persistence via WordPress transients
+* WooCommerce auto-detection and tool activation
+* Context Provider with auto-injected site snapshot
+* REST API with session management (`/agent/chat`, `/agent/confirm`)
 
 == Upgrade Notice ==
 
 = 1.0.0 =
-First release — install and configure your preferred AI provider to get started.
+First release — install and configure your preferred AI provider to get started. Gemini offers a free tier!

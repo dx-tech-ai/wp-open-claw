@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       WP Open Claw
- * Plugin URI:        https://github.com/openclaw/wp-open-claw
+ * Plugin URI:        https://github.com/dx-tech-ai/wp-open-claw
  * Description:       AI Agent tự trị cho WordPress — thực thi hành động thật qua vòng lặp ReAct với Command Palette UI.
  * Version:           1.0.0
  * Requires at least: 6.4
- * Requires PHP:      8.1
- * Author:            Open Claw
- * Author URI:        https://github.com/openclaw
+ * Requires PHP:      7.4
+ * Author:            DX Tech AI
+ * Author URI:        https://github.com/dx-tech-ai
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       wp-open-claw

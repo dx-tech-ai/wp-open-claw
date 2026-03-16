@@ -89,8 +89,8 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
                 ],
                 'status' => [
                     'type'        => 'string',
-                    'enum'        => ['draft', 'publish', 'pending', 'private'],
-                    'description' => 'Trạng thái sản phẩm (mặc định: draft).',
+                    'enum'        => ['any', 'draft', 'publish', 'pending', 'private'],
+                    'description' => 'Trạng thái sản phẩm. Khi list: mặc định "any" (tất cả). Khi create: mặc định "draft".',
                 ],
                 'weight' => [
                     'type'        => 'string',
@@ -143,17 +143,26 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
 
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'create'          => $this->createProduct($params),
-            'update'          => $this->updateProduct($params),
-            'delete'          => $this->deleteProduct($params),
-            'list'            => $this->listProducts($params),
-            'get'             => $this->getProduct($params),
-            'list_categories' => $this->listCategories($params),
-            'create_category' => $this->createCategory($params),
-            'delete_category' => $this->deleteCategory($params),
-            default           => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'create':
+                return $this->createProduct($params);
+            case 'update':
+                return $this->updateProduct($params);
+            case 'delete':
+                return $this->deleteProduct($params);
+            case 'list':
+                return $this->listProducts($params);
+            case 'get':
+                return $this->getProduct($params);
+            case 'list_categories':
+                return $this->listCategories($params);
+            case 'create_category':
+                return $this->createCategory($params);
+            case 'delete_category':
+                return $this->deleteCategory($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     // ───────────────────────────────────────────── Write Actions
@@ -329,10 +338,22 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
             ];
         }
 
+        // Build status breakdown for the message.
+        $status_counts = [];
+        foreach ($data as $item) {
+            $s = $item['status'];
+            $status_counts[$s] = ($status_counts[$s] ?? 0) + 1;
+        }
+        $parts = [];
+        foreach ($status_counts as $s => $c) {
+            $parts[] = sprintf('%d %s', $c, $s);
+        }
+        $breakdown = $parts ? ' (' . implode(', ', $parts) . ')' : '';
+
         return [
             'success' => true,
             'data'    => $data,
-            'message' => sprintf('Found %d products.', count($data)),
+            'message' => sprintf('Found %d products%s.', count($data), $breakdown),
         ];
     }
 

@@ -79,13 +79,18 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
 
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'list'          => $this->listOrders($params),
-            'get'           => $this->getOrder($params),
-            'update_status' => $this->updateStatus($params),
-            'revenue_stats' => $this->revenueStats($params),
-            default         => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'list':
+                return $this->listOrders($params);
+            case 'get':
+                return $this->getOrder($params);
+            case 'update_status':
+                return $this->updateStatus($params);
+            case 'revenue_stats':
+                return $this->revenueStats($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     private function listOrders(array $p): array {
@@ -216,13 +221,21 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
 
         // Calculate date range.
         $now = current_time('timestamp');
-        $date_after = match ($period) {
-            'today' => gmdate('Y-m-d 00:00:00', $now),
-            'week'  => gmdate('Y-m-d 00:00:00', strtotime('-7 days', $now)),
-            'month' => gmdate('Y-m-d 00:00:00', strtotime('-30 days', $now)),
-            'year'  => gmdate('Y-m-d 00:00:00', strtotime('-365 days', $now)),
-            default => gmdate('Y-m-d 00:00:00', strtotime('-30 days', $now)),
-        };
+        switch ($period) {
+            case 'today':
+                $date_after = gmdate('Y-m-d 00:00:00', $now);
+                break;
+            case 'week':
+                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-7 days', $now));
+                break;
+            case 'year':
+                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-365 days', $now));
+                break;
+            case 'month':
+            default:
+                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-30 days', $now));
+                break;
+        }
 
         $orders = wc_get_orders([
             'limit'      => -1,

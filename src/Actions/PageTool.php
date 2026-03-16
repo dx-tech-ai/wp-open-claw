@@ -73,13 +73,18 @@ class PageTool implements ToolInterface {
     public function execute(array $params): array {
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'create' => $this->createPage($params),
-            'update' => $this->updatePage($params),
-            'list'   => $this->listPages($params),
-            'delete' => $this->deletePage($params),
-            default  => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'create':
+                return $this->createPage($params);
+            case 'update':
+                return $this->updatePage($params);
+            case 'list':
+                return $this->listPages($params);
+            case 'delete':
+                return $this->deletePage($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     private function createPage(array $p): array {

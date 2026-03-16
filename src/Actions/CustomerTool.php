@@ -63,24 +63,33 @@ class CustomerTool implements ToolInterface {
 
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'list'   => $this->listCustomers($params),
-            'get'    => $this->getCustomer($params),
-            'search' => $this->searchCustomers($params),
-            'stats'  => $this->customerStats(),
-            default  => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'list':
+                return $this->listCustomers($params);
+            case 'get':
+                return $this->getCustomer($params);
+            case 'search':
+                return $this->searchCustomers($params);
+            case 'stats':
+                return $this->customerStats();
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     private function listCustomers(array $p): array {
         $limit   = min(absint($p['limit'] ?? 10), 30);
         $orderby = sanitize_text_field($p['orderby'] ?? 'registered');
 
-        $wp_orderby = match ($orderby) {
-            'order_count' => 'meta_value_num',
-            'total_spent' => 'meta_value_num',
-            default       => 'registered',
-        };
+        switch ($orderby) {
+            case 'order_count':
+            case 'total_spent':
+                $wp_orderby = 'meta_value_num';
+                break;
+            default:
+                $wp_orderby = 'registered';
+                break;
+        }
 
         $args = [
             'role'    => 'customer',

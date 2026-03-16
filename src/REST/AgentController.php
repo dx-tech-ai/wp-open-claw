@@ -70,8 +70,10 @@ class AgentController {
 
     /**
      * Permission check — must have manage_options capability.
+     *
+     * @return bool|\WP_Error
      */
-    public function check_permissions(WP_REST_Request $request): bool|WP_Error {
+    public function check_permissions(WP_REST_Request $request) {
         if (! current_user_can('manage_options')) {
             return new WP_Error(
                 'rest_forbidden',

@@ -65,14 +65,20 @@ class TaxonomyTool implements ToolInterface {
 
         $action = sanitize_text_field($params['action'] ?? '');
 
-        return match ($action) {
-            'create_category' => $this->createCategory($params),
-            'update_category' => $this->updateCategory($params),
-            'delete_category' => $this->deleteCategory($params),
-            'create_tag'      => $this->createTag($params),
-            'delete_tag'      => $this->deleteTag($params),
-            default => ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"],
-        };
+        switch ($action) {
+            case 'create_category':
+                return $this->createCategory($params);
+            case 'update_category':
+                return $this->updateCategory($params);
+            case 'delete_category':
+                return $this->deleteCategory($params);
+            case 'create_tag':
+                return $this->createTag($params);
+            case 'delete_tag':
+                return $this->deleteTag($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown action: {$action}"];
+        }
     }
 
     private function createCategory(array $p): array {

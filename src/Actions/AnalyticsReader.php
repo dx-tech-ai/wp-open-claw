@@ -48,13 +48,18 @@ class AnalyticsReader implements ToolInterface {
     public function execute(array $params): array {
         $target = sanitize_text_field($params['target'] ?? '');
 
-        return match ($target) {
-            'post_stats'      => $this->postStats($params),
-            'comment_stats'   => $this->commentStats(),
-            'content_summary' => $this->contentSummary(),
-            'recent_posts'    => $this->recentPosts($params),
-            default => ['success' => false, 'data' => null, 'message' => "Unknown target: {$target}"],
-        };
+        switch ($target) {
+            case 'post_stats':
+                return $this->postStats($params);
+            case 'comment_stats':
+                return $this->commentStats();
+            case 'content_summary':
+                return $this->contentSummary();
+            case 'recent_posts':
+                return $this->recentPosts($params);
+            default:
+                return ['success' => false, 'data' => null, 'message' => "Unknown target: {$target}"];
+        }
     }
 
     private function postStats(array $p): array {
