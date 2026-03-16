@@ -18,12 +18,12 @@ if ($admin) {
     $admin->remove_cap('manage_open_claw');
 }
 
-// Clear transients.
+// Clear transients (including user-bound sessions).
 global $wpdb;
 $wpdb->query(
     $wpdb->prepare(
         "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-        '_transient_wpoc_%',
-        '_transient_timeout_wpoc_%'
+        $wpdb->esc_like('_transient_wpoc_') . '%',
+        $wpdb->esc_like('_transient_timeout_wpoc_') . '%'
     )
 );

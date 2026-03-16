@@ -22,7 +22,7 @@ class GeminiClient implements ClientInterface {
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = get_option('wpoc_settings', []);
+        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $this->apiKey   = $apiKey ?? ($settings['gemini_api_key'] ?? '');
         $this->model    = $model ?? ($settings['gemini_model'] ?? 'gemini-2.5-flash');
     }
@@ -31,7 +31,7 @@ class GeminiClient implements ClientInterface {
      * @inheritDoc
      */
     public function chat(array $messages, array $tools = []): array {
-        $url = self::API_BASE . $this->model . ':generateContent?key=' . $this->apiKey;
+        $url = self::API_BASE . $this->model . ':generateContent';
 
         $body = [
             'contents'         => $this->mapMessages($messages),
@@ -56,7 +56,10 @@ class GeminiClient implements ClientInterface {
 
         $response = wp_remote_post($url, [
             'timeout' => 120,
-            'headers' => ['Content-Type' => 'application/json'],
+            'headers' => [
+                'Content-Type'   => 'application/json',
+                'x-goog-api-key' => $this->apiKey,
+            ],
             'body'    => wp_json_encode($body),
         ]);
 

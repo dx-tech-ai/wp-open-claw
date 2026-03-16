@@ -222,20 +222,20 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
         $period = sanitize_text_field($p['period'] ?? 'month');
 
         // Calculate date range.
-        $now = current_time('timestamp');
+        $now = current_datetime();
         switch ($period) {
             case 'today':
-                $date_after = gmdate('Y-m-d 00:00:00', $now);
+                $date_after = $now->format('Y-m-d 00:00:00');
                 break;
             case 'week':
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-7 days', $now));
+                $date_after = $now->modify('-7 days')->format('Y-m-d 00:00:00');
                 break;
             case 'year':
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-365 days', $now));
+                $date_after = $now->modify('-365 days')->format('Y-m-d 00:00:00');
                 break;
             case 'month':
             default:
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-30 days', $now));
+                $date_after = $now->modify('-30 days')->format('Y-m-d 00:00:00');
                 break;
         }
 

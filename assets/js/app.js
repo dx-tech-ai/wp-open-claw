@@ -170,28 +170,55 @@
         if (params.post_title) {
             preview += `<strong>Title:</strong> ${escapeHtml(params.post_title)}<br>`;
         }
+        if (params.name) {
+            preview += `<strong>Name:</strong> ${escapeHtml(params.name)}<br>`;
+        }
         if (params.post_content) {
             const truncated = params.post_content.length > 300
                 ? params.post_content.substring(0, 300) + '...'
                 : params.post_content;
             preview += `<strong>Content:</strong><br><pre>${escapeHtml(truncated)}</pre>`;
         }
+        if (params.description) {
+            const truncated = params.description.length > 300
+                ? params.description.substring(0, 300) + '...'
+                : params.description;
+            preview += `<strong>Description:</strong><br><pre>${escapeHtml(truncated)}</pre>`;
+        }
         if (params.post_status) {
             preview += `<strong>Status:</strong> ${escapeHtml(params.post_status)}<br>`;
         }
+        if (params.status) {
+            preview += `<strong>Status:</strong> ${escapeHtml(params.status)}<br>`;
+        }
+        if (params.action) {
+            preview += `<strong>Action:</strong> ${escapeHtml(params.action)}<br>`;
+        }
 
-        card.innerHTML = `
-            <div class="wpoc-action-card-title">🔐 ${escapeHtml(confirmation.message)}</div>
-            <div class="wpoc-action-card-body">${preview}</div>
-            <div class="wpoc-action-buttons">
-                <button class="wpoc-btn wpoc-btn-approve" data-action-id="${escapeHtml(confirmation.action_id)}">
-                    ✅ Approve
-                </button>
-                <button class="wpoc-btn wpoc-btn-reject" data-action-id="${escapeHtml(confirmation.action_id)}">
-                    ❌ Reject
-                </button>
-            </div>
+        // Build card safely — use textContent for dynamic data.
+        const cardTitle = document.createElement('div');
+        cardTitle.className = 'wpoc-action-card-title';
+        cardTitle.textContent = '🔐 ' + (confirmation.message || '');
+
+        const cardBody = document.createElement('div');
+        cardBody.className = 'wpoc-action-card-body';
+        cardBody.innerHTML = preview; // preview is already escaped above
+
+        const actionIdAttr = escapeHtml(confirmation.action_id);
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'wpoc-action-buttons';
+        buttonsDiv.innerHTML = `
+            <button class="wpoc-btn wpoc-btn-approve" data-action-id="${actionIdAttr}">
+                ✅ Approve
+            </button>
+            <button class="wpoc-btn wpoc-btn-reject" data-action-id="${actionIdAttr}">
+                ❌ Reject
+            </button>
         `;
+
+        card.appendChild(cardTitle);
+        card.appendChild(cardBody);
+        card.appendChild(buttonsDiv);
 
         // Bind events.
         card.querySelector('.wpoc-btn-approve').addEventListener('click', () => {

@@ -35,6 +35,8 @@ class Kernel {
     private ContextProvider $context;
     private int $maxIterations;
 
+    private const MAX_MESSAGE_LENGTH = 10000;
+
     /** @var array Conversation message history for this session. */
     private array $messages = [];
 
@@ -42,7 +44,7 @@ class Kernel {
     private array $pendingActions = [];
 
     public function __construct() {
-        $settings = get_option('wpoc_settings', []);
+        $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
 
         // Initialize LLM client based on provider setting.
         $provider = $settings['llm_provider'] ?? 'openai';
@@ -93,6 +95,13 @@ class Kernel {
      */
     public function handle(string $userMessage): array {
         $steps = [];
+
+        if (mb_strlen($userMessage) > self::MAX_MESSAGE_LENGTH) {
+            return [[
+                'type'    => 'error',
+                'content' => sprintf('Message too long. Maximum %d characters allowed.', self::MAX_MESSAGE_LENGTH),
+            ]];
+        }
 
         // Build system prompt with site context.
         $systemPrompt = $this->buildSystemPrompt();

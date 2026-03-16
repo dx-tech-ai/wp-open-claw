@@ -206,16 +206,19 @@ class CustomerTool implements ToolInterface {
             return ['success' => false, 'data' => null, 'message' => 'Search query is required.'];
         }
 
+        // Escape wildcards to prevent query manipulation.
+        $safe_query = '*' . esc_attr($query) . '*';
+
         $users = get_users([
             'role'   => 'customer',
-            'search' => '*' . $query . '*',
+            'search' => $safe_query,
             'number' => 10,
         ]);
 
         // Also search by email.
         $by_email = get_users([
             'role'         => 'customer',
-            'search'       => '*' . $query . '*',
+            'search'       => $safe_query,
             'search_columns' => ['user_email'],
             'number'       => 10,
         ]);

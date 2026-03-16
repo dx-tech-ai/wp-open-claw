@@ -21,7 +21,7 @@ class OpenAIClient implements ClientInterface {
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = get_option('wpoc_settings', []);
+        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $this->apiKey   = $apiKey ?? ($settings['openai_api_key'] ?? '');
         $this->model    = $model ?? ($settings['openai_model'] ?? 'gpt-4o');
     }
@@ -98,9 +98,9 @@ class OpenAIClient implements ClientInterface {
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_TIMEOUT        => 120,
             CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
-        $buffer        = '';
         $tool_calls    = [];
         $content       = '';
         $finish_reason = null;

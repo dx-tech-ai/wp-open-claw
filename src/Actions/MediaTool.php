@@ -13,6 +13,42 @@ use OpenClaw\Tools\ToolInterface;
  */
 class MediaTool implements ToolInterface {
 
+    /**
+     * Validate URL is safe (not pointing to internal/private networks).
+     */
+    private function isUrlSafe(string $url): bool {
+        $parsed = wp_parse_url($url);
+        if (! $parsed || empty($parsed['host'])) {
+            return false;
+        }
+
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = strtolower($parsed['host']);
+
+        // Block localhost and common internal hostnames.
+        $blocked_hosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', 'metadata.google.internal'];
+        if (in_array($host, $blocked_hosts, true)) {
+            return false;
+        }
+
+        // Resolve hostname and block private/reserved IPs.
+        $ip = gethostbyname($host);
+        if ($ip === $host) {
+            return false; // DNS resolution failed.
+        }
+
+        $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        if (! filter_var($ip, FILTER_VALIDATE_IP, $flags)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function getName(): string {
         return 'wp_media_manager';
     }
@@ -80,6 +116,10 @@ class MediaTool implements ToolInterface {
         $url = esc_url_raw($p['url'] ?? '');
         if (empty($url)) {
             return ['success' => false, 'data' => null, 'message' => 'URL is required.'];
+        }
+
+        if (! $this->isUrlSafe($url)) {
+            return ['success' => false, 'data' => null, 'message' => 'URL is not allowed. Only public HTTP/HTTPS URLs are accepted.'];
         }
 
         // Need media functions.
