@@ -442,7 +442,7 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
                 'categories'        => $cat_names,
                 'tags'              => $tag_names,
                 'image_url'         => wp_get_attachment_url($product->get_image_id()) ?: null,
-                'date_created'      => $product->get_date_created()?->date('Y-m-d H:i:s'),
+                'date_created'      => ($dc = $product->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
                 'edit_url'          => admin_url("post.php?post={$product_id}&action=edit"),
                 'view_url'          => get_permalink($product_id),
             ],
