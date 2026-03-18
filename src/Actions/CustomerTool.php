@@ -159,7 +159,7 @@ class CustomerTool implements ToolInterface {
                 'id'     => $order->get_id(),
                 'status' => $order->get_status(),
                 'total'  => $order->get_total(),
-                'date'   => $order->get_date_created()?->date('Y-m-d H:i:s'),
+                'date'   => ($dc = $order->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
             ];
         }
 

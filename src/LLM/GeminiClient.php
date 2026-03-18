@@ -16,6 +16,8 @@ use Generator;
  */
 class GeminiClient implements ClientInterface {
 
+    use ErrorMapper;
+
     private const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 
     private string $apiKey;
@@ -36,8 +38,8 @@ class GeminiClient implements ClientInterface {
         $body = [
             'contents'         => $this->mapMessages($messages),
             'generationConfig' => [
-                'temperature'  => 0.7,
-                'maxOutputTokens' => 4096,
+                'temperature'     => 0.7,
+                'maxOutputTokens' => 8192,
             ],
         ];
 
@@ -74,10 +76,11 @@ class GeminiClient implements ClientInterface {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200) {
-            $errMsg = $data['error']['message'] ?? "API error (HTTP {$status})";
+            $rawMsg = $data['error']['message'] ?? '';
             return [
                 'error'   => true,
-                'message' => $errMsg,
+                'message' => $this->mapApiError($status, $rawMsg),
+                'error_code' => $status,
             ];
         }
 

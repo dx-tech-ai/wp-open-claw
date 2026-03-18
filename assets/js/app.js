@@ -2,10 +2,19 @@
  * WP Open Claw — Command Palette App
  *
  * Handles Ctrl+G toggle, REST API communication,
- * real-time log rendering, and Action Card approve/reject.
+ * real-time log rendering, Action Card approve/reject,
+ * and localStorage persistence for UI state.
  */
 (function () {
     'use strict';
+
+    /* ------------------------------------------------------------------ */
+    /* LocalStorage Keys                                                   */
+    /* ------------------------------------------------------------------ */
+    const STORAGE_PREFIX   = 'wpoc_';
+    const KEY_SESSION_ID   = STORAGE_PREFIX + 'session_id';
+    const KEY_CHAT_LOG     = STORAGE_PREFIX + 'chat_log';
+    const KEY_DRAFT_INPUT  = STORAGE_PREFIX + 'draft_input';
 
     /* ------------------------------------------------------------------ */
     /* State                                                               */
@@ -22,6 +31,84 @@
     const logEl     = () => document.getElementById('wpoc-log');
     const actionsEl = () => document.getElementById('wpoc-actions');
     const statusEl  = () => document.getElementById('wpoc-status');
+
+    /* ------------------------------------------------------------------ */
+    /* localStorage Helpers                                                */
+    /* ------------------------------------------------------------------ */
+    function saveState() {
+        try {
+            if (sessionId) {
+                localStorage.setItem(KEY_SESSION_ID, sessionId);
+            }
+            const log = logEl();
+            if (log) {
+                localStorage.setItem(KEY_CHAT_LOG, log.innerHTML);
+            }
+        } catch (e) {
+            // Silently fail if localStorage is full or unavailable.
+        }
+    }
+
+    function saveDraft() {
+        try {
+            const inp = input();
+            if (inp) {
+                localStorage.setItem(KEY_DRAFT_INPUT, inp.value);
+            }
+        } catch (e) {
+            // Silently fail.
+        }
+    }
+
+    function restoreState() {
+        try {
+            // Restore session ID.
+            const savedSessionId = localStorage.getItem(KEY_SESSION_ID);
+            if (savedSessionId) {
+                sessionId = savedSessionId;
+            }
+
+            // Restore chat log.
+            const savedLog = localStorage.getItem(KEY_CHAT_LOG);
+            const log = logEl();
+            if (savedLog && log) {
+                log.innerHTML = savedLog;
+                log.scrollTop = log.scrollHeight;
+            }
+
+            // Restore draft input.
+            const savedDraft = localStorage.getItem(KEY_DRAFT_INPUT);
+            const inp = input();
+            if (savedDraft && inp) {
+                inp.value = savedDraft;
+                autoResize(inp);
+            }
+        } catch (e) {
+            // Silently fail.
+        }
+    }
+
+    function clearState() {
+        try {
+            localStorage.removeItem(KEY_SESSION_ID);
+            localStorage.removeItem(KEY_CHAT_LOG);
+            localStorage.removeItem(KEY_DRAFT_INPUT);
+        } catch (e) {
+            // Silently fail.
+        }
+        sessionId = null;
+        iterationCount = 0;
+        const log = logEl();
+        if (log) log.innerHTML = '';
+        const actions = actionsEl();
+        if (actions) actions.innerHTML = '';
+        const inp = input();
+        if (inp) {
+            inp.value = '';
+            autoResize(inp);
+        }
+        setStatus('Ready', false);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Toggle                                                              */
@@ -82,6 +169,7 @@
             `;
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
+            saveState();
             return;
         }
 
@@ -98,6 +186,7 @@
             `;
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
+            saveState();
             return;
         }
 
@@ -115,20 +204,26 @@
             `;
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
+            saveState();
             return;
         }
 
-        // ── Error: show prominently ──
+        // ── Error: show prominently with optional settings link ──
         if (type === 'error') {
             const entry = document.createElement('div');
             entry.className = 'wpoc-log-entry wpoc-log-error';
             const msg = typeof content === 'string' ? content : JSON.stringify(content);
+            const needsSettings = /API Key|Settings|exceeded.*quota|quota|invalid/i.test(msg);
             entry.innerHTML = `
                 <span class="wpoc-log-icon">❌</span>
-                <div class="wpoc-log-content">${escapeHtml(msg)}</div>
+                <div class="wpoc-log-content">
+                    ${escapeHtml(msg)}
+                    ${needsSettings ? '<br><a href="' + wpocData.adminUrl + 'admin.php?page=open-claw-settings" class="wpoc-settings-link">⚙️ Mở Cài đặt</a>' : ''}
+                </div>
             `;
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
+            saveState();
             return;
         }
 
@@ -152,6 +247,8 @@
         if (!isUser) {
             iterationCount = 0;
         }
+
+        saveState();
     }
 
     /* ------------------------------------------------------------------ */
@@ -241,6 +338,9 @@
         setStatus('Processing...', true);
         sendBtn() && (sendBtn().disabled = true);
 
+        // Clear draft after sending.
+        try { localStorage.removeItem(KEY_DRAFT_INPUT); } catch (e) {}
+
         // Show user's message in log.
         addLogEntry('response', `You: ${message}`);
 
@@ -281,6 +381,7 @@
             isProcessing = false;
             setStatus('Ready', false);
             sendBtn() && (sendBtn().disabled = false);
+            saveState();
         }
     }
 
@@ -322,6 +423,7 @@
             addLogEntry('error', `Confirmation error: ${err.message}`);
         } finally {
             setStatus('Ready', false);
+            saveState();
         }
     }
 
@@ -344,9 +446,20 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /* Auto-resize Textarea                                                */
+    /* ------------------------------------------------------------------ */
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Event Bindings (DOM Ready)                                          */
     /* ------------------------------------------------------------------ */
     document.addEventListener('DOMContentLoaded', function () {
+        // Restore saved UI state.
+        restoreState();
+
         // Send button.
         const btn = sendBtn();
         if (btn) {
@@ -355,11 +468,12 @@
                 if (inp && inp.value.trim()) {
                     sendMessage(inp.value.trim());
                     inp.value = '';
+                    autoResize(inp);
                 }
             });
         }
 
-        // Enter key.
+        // Textarea: Enter sends, Shift+Enter adds newline.
         const inp = input();
         if (inp) {
             inp.addEventListener('keydown', function (e) {
@@ -369,18 +483,31 @@
                     if (val) {
                         sendMessage(val);
                         inp.value = '';
+                        autoResize(inp);
                     }
                 }
             });
+
+            // Auto-resize on typing + save draft.
+            inp.addEventListener('input', function () {
+                autoResize(inp);
+                saveDraft();
+            });
         }
 
-        // Close button.
+        // Close button — just hides, preserves state.
         const closeBtn = document.querySelector('.wpoc-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', closePalette);
         }
 
-        // Backdrop click to close.
+        // New Chat button — clears everything.
+        const newChatBtn = document.getElementById('wpoc-new-chat');
+        if (newChatBtn) {
+            newChatBtn.addEventListener('click', clearState);
+        }
+
+        // Backdrop click — just hides, preserves state.
         const backdrop = document.querySelector('.wpoc-backdrop');
         if (backdrop) {
             backdrop.addEventListener('click', closePalette);

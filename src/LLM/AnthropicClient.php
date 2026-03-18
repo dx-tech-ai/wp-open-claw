@@ -15,6 +15,8 @@ use Generator;
  */
 class AnthropicClient implements ClientInterface {
 
+    use ErrorMapper;
+
     private const API_URL = 'https://api.anthropic.com/v1/messages';
 
     private string $apiKey;
@@ -44,7 +46,7 @@ class AnthropicClient implements ClientInterface {
 
         $body = [
             'model'      => $this->model,
-            'max_tokens' => 4096,
+            'max_tokens' => 8192,
             'messages'   => $conversationMessages,
         ];
 
@@ -77,9 +79,11 @@ class AnthropicClient implements ClientInterface {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200) {
+            $rawMsg = $data['error']['message'] ?? '';
             return [
                 'error'   => true,
-                'message' => $data['error']['message'] ?? "API error (HTTP {$status})",
+                'message' => $this->mapApiError($status, $rawMsg),
+                'error_code' => $status,
             ];
         }
 
