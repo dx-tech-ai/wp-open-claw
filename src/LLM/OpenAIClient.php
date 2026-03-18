@@ -15,6 +15,8 @@ use Generator;
  */
 class OpenAIClient implements ClientInterface {
 
+    use ErrorMapper;
+
     private const API_URL = 'https://api.openai.com/v1/chat/completions';
 
     private string $apiKey;
@@ -31,8 +33,9 @@ class OpenAIClient implements ClientInterface {
      */
     public function chat(array $messages, array $tools = []): array {
         $body = [
-            'model'    => $this->model,
-            'messages' => $messages,
+            'model'      => $this->model,
+            'messages'   => $messages,
+            'max_tokens' => 8192,
         ];
 
         if (! empty($tools)) {
@@ -60,9 +63,11 @@ class OpenAIClient implements ClientInterface {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200) {
+            $rawMsg = $data['error']['message'] ?? '';
             return [
                 'error'   => true,
-                'message' => $data['error']['message'] ?? "API error (HTTP {$status})",
+                'message' => $this->mapApiError($status, $rawMsg),
+                'error_code' => $status,
             ];
         }
 

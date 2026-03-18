@@ -154,6 +154,7 @@ class Settings {
         add_settings_field('openai_api_key', __('OpenAI API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
             'label_for' => 'openai_api_key',
             'description' => __('Get your key at platform.openai.com', 'wp-open-claw'),
+            'data-provider' => 'openai',
         ]);
 
         // OpenAI Model.
@@ -164,12 +165,14 @@ class Settings {
                 'gpt-4o-mini'    => 'GPT-4o Mini',
                 'gpt-4-turbo'    => 'GPT-4 Turbo',
             ],
+            'data-provider' => 'openai',
         ]);
 
         // Anthropic API Key.
         add_settings_field('anthropic_api_key', __('Anthropic API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
             'label_for' => 'anthropic_api_key',
             'description' => __('Get your key at console.anthropic.com', 'wp-open-claw'),
+            'data-provider' => 'anthropic',
         ]);
 
         // Anthropic Model.
@@ -179,12 +182,14 @@ class Settings {
                 'claude-sonnet-4-20250514' => 'Claude Sonnet 4',
                 'claude-3-5-haiku-20241022'  => 'Claude 3.5 Haiku',
             ],
+            'data-provider' => 'anthropic',
         ]);
 
         // Google Gemini API Key.
         add_settings_field('gemini_api_key', __('Google AI Studio API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
             'label_for' => 'gemini_api_key',
             'description' => __('Get your free key at aistudio.google.com', 'wp-open-claw'),
+            'data-provider' => 'gemini',
         ]);
 
         // Google Gemini Model.
@@ -196,6 +201,7 @@ class Settings {
                 'gemini-2.5-pro-preview-05-06'    => 'Gemini 2.5 Pro Preview',
                 'gemini-2.0-flash-lite'           => 'Gemini 2.0 Flash Lite',
             ],
+            'data-provider' => 'gemini',
         ]);
 
         // Google CSE API Key.
@@ -275,6 +281,31 @@ class Settings {
                 ?>
             </form>
         </div>
+        <script>
+        (function() {
+            var providerSelect = document.getElementById('llm_provider');
+            if (!providerSelect) return;
+
+            // Mark parent <tr> rows with data-provider from child elements' CSS classes.
+            var providers = ['openai', 'anthropic', 'gemini'];
+            providers.forEach(function(p) {
+                document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
+                    var tr = el.closest('tr');
+                    if (tr) tr.setAttribute('data-provider', p);
+                });
+            });
+
+            function toggleProviderFields() {
+                var selected = providerSelect.value;
+                document.querySelectorAll('tr[data-provider]').forEach(function(row) {
+                    row.style.display = row.getAttribute('data-provider') === selected ? '' : 'none';
+                });
+            }
+
+            providerSelect.addEventListener('change', toggleProviderFields);
+            toggleProviderFields();
+        })();
+        </script>
         <?php
     }
 
@@ -283,9 +314,11 @@ class Settings {
     public function render_select_field(array $args): void {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
+        $providerClass = ! empty($args['data-provider']) ? ' wpoc-provider-' . esc_attr($args['data-provider']) : '';
         ?>
         <select id="<?php echo esc_attr($args['label_for']); ?>"
-                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>">
+                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
+                class="<?php echo esc_attr(trim($providerClass)); ?>">
             <?php foreach ($args['options'] as $key => $label) : ?>
                 <option value="<?php echo esc_attr($key); ?>" <?php selected($value, $key); ?>>
                     <?php echo esc_html($label); ?>
@@ -312,12 +345,13 @@ class Settings {
     public function render_password_field(array $args): void {
         $options = self::get_decrypted_settings();
         $value   = $options[$args['label_for']] ?? '';
+        $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
         ?>
         <input type="password"
                id="<?php echo esc_attr($args['label_for']); ?>"
                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
                value="<?php echo esc_attr($value); ?>"
-               class="regular-text"
+               class="regular-text <?php echo esc_attr($providerClass); ?>"
                autocomplete="off" />
         <?php if (! empty($args['description'])) : ?>
             <p class="description"><?php echo esc_html($args['description']); ?></p>
