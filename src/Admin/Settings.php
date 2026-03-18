@@ -14,6 +14,69 @@ class Settings {
     private const OPTION_GROUP = 'wpoc_settings';
     private const OPTION_NAME  = 'wpoc_settings';
     private const PAGE_SLUG    = 'wpoc-settings';
+    private const CIPHER       = 'aes-256-cbc';
+
+    private static array $encrypted_fields = [
+        'openai_api_key',
+        'anthropic_api_key',
+        'gemini_api_key',
+        'google_cse_api_key',
+    ];
+
+    /**
+     * Encrypt a value using WordPress auth salt with random IV.
+     */
+    private static function encrypt(string $value): string {
+        if (empty($value)) {
+            return '';
+        }
+        $key = hash('sha256', wp_salt('auth'), true);
+        $iv_length = openssl_cipher_iv_length(self::CIPHER);
+        $iv = openssl_random_pseudo_bytes($iv_length);
+        $encrypted = openssl_encrypt($value, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        if ($encrypted === false) {
+            return '';
+        }
+        return base64_encode($iv . $encrypted);
+    }
+
+    /**
+     * Decrypt a value.
+     */
+    public static function decrypt(string $value): string {
+        if (empty($value)) {
+            return '';
+        }
+        $decoded = base64_decode($value, true);
+        if ($decoded === false) {
+            return $value; // Return as-is if not base64 (legacy plaintext).
+        }
+        $key = hash('sha256', wp_salt('auth'), true);
+        $iv_length = openssl_cipher_iv_length(self::CIPHER);
+        if (strlen($decoded) < $iv_length) {
+            return $value; // Too short, likely legacy plaintext.
+        }
+        $iv = substr($decoded, 0, $iv_length);
+        $ciphertext = substr($decoded, $iv_length);
+        $decrypted = openssl_decrypt($ciphertext, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        if ($decrypted === false) {
+            return $value; // Decryption failed, return as-is (legacy plaintext).
+        }
+        return $decrypted;
+    }
+
+    /**
+     * Get decrypted settings.
+     */
+    public static function get_decrypted_settings(): array {
+        $settings = get_option(self::OPTION_NAME, []);
+        foreach (self::$encrypted_fields as $field) {
+            if (! empty($settings[$field])) {
+                $settings[$field] = self::decrypt($settings[$field]);
+            }
+        }
+        return $settings;
+    }
 
     public function init(): void {
         add_action('admin_menu', [$this, 'add_menu_page']);
@@ -172,7 +235,7 @@ class Settings {
     }
 
     public function sanitize_settings(array $input): array {
-        return [
+        $sanitized = [
             'llm_provider'       => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['llm_provider'] : 'openai',
             'openai_api_key'     => sanitize_text_field($input['openai_api_key'] ?? ''),
             'openai_model'       => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
@@ -184,6 +247,15 @@ class Settings {
             'google_cse_cx'      => sanitize_text_field($input['google_cse_cx'] ?? ''),
             'max_iterations'     => max(1, min(20, absint($input['max_iterations'] ?? 10))),
         ];
+
+        // Encrypt API keys before storing.
+        foreach (self::$encrypted_fields as $field) {
+            if (! empty($sanitized[$field])) {
+                $sanitized[$field] = self::encrypt($sanitized[$field]);
+            }
+        }
+
+        return $sanitized;
     }
 
     public function render_settings_page(): void {
@@ -238,7 +310,7 @@ class Settings {
     }
 
     public function render_password_field(array $args): void {
-        $options = get_option(self::OPTION_NAME, $this->get_defaults());
+        $options = self::get_decrypted_settings();
         $value   = $options[$args['label_for']] ?? '';
         ?>
         <input type="password"

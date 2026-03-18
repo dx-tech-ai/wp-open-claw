@@ -21,7 +21,7 @@ class AnthropicClient implements ClientInterface {
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = get_option('wpoc_settings', []);
+        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $this->apiKey   = $apiKey ?? ($settings['anthropic_api_key'] ?? '');
         $this->model    = $model ?? ($settings['anthropic_model'] ?? 'claude-sonnet-4-20250514');
     }

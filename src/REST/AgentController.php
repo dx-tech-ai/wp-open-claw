@@ -21,6 +21,8 @@ use WP_Error;
 class AgentController {
 
     private const NAMESPACE = 'open-claw/v1';
+    private const RATE_LIMIT = 20;
+    private const RATE_WINDOW = 60;
 
     /**
      * Register REST API routes.
@@ -84,7 +86,36 @@ class AgentController {
             );
         }
 
+        // Rate limiting per user.
+        $user_id = get_current_user_id();
+        $key     = 'wpoc_rate_' . $user_id;
+        $count   = (int) get_transient($key);
+
+        if ($count >= self::RATE_LIMIT) {
+            return new WP_Error(
+                'rest_rate_limit',
+                esc_html__('Rate limit exceeded. Please wait before sending more requests.', 'wp-open-claw'),
+                ['status' => 429]
+            );
+        }
+
+        set_transient($key, $count + 1, self::RATE_WINDOW);
+
         return true;
+    }
+
+    /**
+     * Validate session_id format (UUID v4 only) and ownership.
+     */
+    private function validate_session_id(string $session_id): bool {
+        return (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $session_id);
+    }
+
+    /**
+     * Get session transient key bound to current user.
+     */
+    private function session_key(string $session_id): string {
+        return 'wpoc_session_' . get_current_user_id() . '_' . $session_id;
     }
 
     /**
@@ -94,10 +125,17 @@ class AgentController {
         $message    = $request->get_param('message');
         $session_id = $request->get_param('session_id') ?: wp_generate_uuid4();
 
+        if (! $this->validate_session_id($session_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Invalid session ID format.',
+            ], 400);
+        }
+
         $kernel = new Kernel();
 
-        // Restore session if exists.
-        $session = get_transient('wpoc_session_' . $session_id);
+        // Restore session if exists (bound to user).
+        $session = get_transient($this->session_key($session_id));
         if ($session) {
             $kernel->setMessages($session['messages'] ?? []);
             $kernel->setPendingActions($session['pending_actions'] ?? []);
@@ -106,8 +144,8 @@ class AgentController {
         // Run the ReAct loop.
         $steps = $kernel->handle($message);
 
-        // Save session state.
-        set_transient('wpoc_session_' . $session_id, [
+        // Save session state (bound to user).
+        set_transient($this->session_key($session_id), [
             'messages'        => $kernel->getMessages(),
             'pending_actions' => $kernel->getPendingActions(),
         ], HOUR_IN_SECONDS);
@@ -130,8 +168,15 @@ class AgentController {
         $approved   = $request->get_param('approved');
         $session_id = $request->get_param('session_id');
 
-        // Restore session.
-        $session = get_transient('wpoc_session_' . $session_id);
+        if (! $this->validate_session_id($session_id) || ! $this->validate_session_id($action_id)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Invalid ID format.',
+            ], 400);
+        }
+
+        // Restore session (bound to user).
+        $session = get_transient($this->session_key($session_id));
         if (! $session) {
             return new WP_REST_Response([
                 'success' => false,
@@ -151,8 +196,8 @@ class AgentController {
             $steps  = [$result]; // Wrap single result in array for consistency.
         }
 
-        // Update session state (may have new pending actions from resumed loop).
-        set_transient('wpoc_session_' . $session_id, [
+        // Update session state (bound to user).
+        set_transient($this->session_key($session_id), [
             'messages'        => $kernel->getMessages(),
             'pending_actions' => $kernel->getPendingActions(),
         ], HOUR_IN_SECONDS);

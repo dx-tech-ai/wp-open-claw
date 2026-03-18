@@ -57,7 +57,7 @@ class ResearchTool implements ToolInterface {
         }
 
         // Use Google CSE if configured, otherwise fallback to DuckDuckGo.
-        $settings = get_option('wpoc_settings', []);
+        $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $google_key = $settings['google_cse_api_key'] ?? '';
         $google_cx  = $settings['google_cse_cx'] ?? '';
 
@@ -220,13 +220,15 @@ class ResearchTool implements ToolInterface {
      */
     private function searchGoogle(string $query, string $api_key, string $cx): array {
         $url = add_query_arg([
-            'key' => $api_key,
             'cx'  => $cx,
             'q'   => urlencode($query),
             'num' => 5,
         ], self::GOOGLE_CSE_URL);
 
-        $response = wp_remote_get($url, ['timeout' => 15]);
+        $response = wp_remote_get($url, [
+            'timeout' => 15,
+            'headers' => ['x-goog-api-key' => $api_key],
+        ]);
 
         if (is_wp_error($response)) {
             return [
