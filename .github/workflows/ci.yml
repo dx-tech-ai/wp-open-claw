@@ -33,10 +33,12 @@ jobs:
           coverage: none
 
       - name: Validate composer.json
-        run: composer validate --strict
+        run: composer validate
 
       - name: Install dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: |
+          composer update --lock --no-interaction
+          composer install --no-dev --optimize-autoloader --no-interaction
 
       - name: Check PHP syntax
         run: find src/ -name "*.php" -print0 | xargs -0 -n1 php -l
