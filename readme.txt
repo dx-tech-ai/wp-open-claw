@@ -1,5 +1,5 @@
 === WP Open Claw ===
-Contributors: WordPress.org DIGITAL X-SOLUTION TECHNOLOGY
+Contributors: dxtechai
 Tags: ai, agent, automation, woocommerce, chatbot
 Requires at least: 6.4
 Tested up to: 6.7
