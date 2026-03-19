@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────
+  # 1. PHP Syntax & Lint Check
+  # ──────────────────────────────────────
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --no-check-lock
+
+      - name: Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Check PHP syntax
+        run: find src/ -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Check main plugin file syntax
+        run: php -l wp-open-claw.php && php -l uninstall.php
+
+  # ──────────────────────────────────────
+  # 2. WordPress Coding Standards (PHPCS)
+  # ──────────────────────────────────────
+  phpcs:
+    name: WordPress Coding Standards
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: cs2pr, composer:v2
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+
+      - name: Install PHPCS & WordPress standards
+        run: |
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --dev \
+            squizlabs/php_codesniffer \
+            wp-coding-standards/wpcs \
+            phpcompatibility/phpcompatibility-wp \
+            dealerdirect/phpcodesniffer-composer-installer
+
+      - name: Run PHPCS
+        run: |
+          ~/.composer/vendor/bin/phpcs \
+            --standard=WordPress \
+            --extensions=php \
+            --ignore=vendor/,node_modules/ \
+            --report=checkstyle \
+            -q \
+            src/ wp-open-claw.php \
+          | cs2pr
+        continue-on-error: true  # Warning only for now, remove later
+
+  # ──────────────────────────────────────
+  # 3. Security Audit
+  # ──────────────────────────────────────
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction
+
+      - name: Check for known vulnerabilities
+        run: composer audit
+
+      - name: Check for suspicious patterns
+        run: |
+          echo "=== Checking for dangerous functions ==="
+          # Fail if eval(), exec(), system(), shell_exec() found in src/
+          if grep -rn --include="*.php" -E '\b(eval|exec|system|shell_exec|passthru|proc_open)\s*\(' src/; then
+            echo "⚠️ Dangerous functions found in source code!"
+            exit 1
+          else
+            echo "✅ No dangerous functions found."
+          fi
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "=== Checking for hardcoded secrets ==="
+          if grep -rn --include="*.php" -iE '(api_key|api_secret|password)\s*=\s*["\x27][a-zA-Z0-9]{16,}' src/; then
+            echo "⚠️ Possible hardcoded secrets found!"
+            exit 1
+          else
+            echo "✅ No hardcoded secrets found."
+          fi
+
+  # ──────────────────────────────────────
+  # 4. Build Test (ensure ZIP can be created)
+  # ──────────────────────────────────────
+  build:
+    name: Build Test
+    runs-on: ubuntu-latest
+    needs: [lint, security]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Verify autoloader works
+        run: |
+          php -r "
+            define('ABSPATH', '/tmp/');
+            require 'vendor/autoload.php';
+            echo '✅ Autoloader works correctly.' . PHP_EOL;
+          "
+
+      - name: Build ZIP
+        run: |
+          PLUGIN_SLUG="wp-open-claw"
+          mkdir -p build/$PLUGIN_SLUG
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='docs' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='*.zip' \
+            ./ build/$PLUGIN_SLUG/
+          cd build && zip -r ../$PLUGIN_SLUG-test.zip $PLUGIN_SLUG/
+          echo "✅ ZIP created: $(du -h ../$PLUGIN_SLUG-test.zip | cut -f1)"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-zip
+          path: wp-open-claw-test.zip
+          retention-days: 7

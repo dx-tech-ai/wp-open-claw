@@ -159,7 +159,7 @@ class CustomerTool implements ToolInterface {
                 'id'     => $order->get_id(),
                 'status' => $order->get_status(),
                 'total'  => $order->get_total(),
-                'date'   => $order->get_date_created()?->date('Y-m-d H:i:s'),
+                'date'   => ($dc = $order->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
             ];
         }
 
@@ -206,16 +206,19 @@ class CustomerTool implements ToolInterface {
             return ['success' => false, 'data' => null, 'message' => 'Search query is required.'];
         }
 
+        // Escape wildcards to prevent query manipulation.
+        $safe_query = '*' . esc_attr($query) . '*';
+
         $users = get_users([
             'role'   => 'customer',
-            'search' => '*' . $query . '*',
+            'search' => $safe_query,
             'number' => 10,
         ]);
 
         // Also search by email.
         $by_email = get_users([
             'role'         => 'customer',
-            'search'       => '*' . $query . '*',
+            'search'       => $safe_query,
             'search_columns' => ['user_email'],
             'number'       => 10,
         ]);

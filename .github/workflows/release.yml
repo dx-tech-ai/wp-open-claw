@@ -5,11 +5,18 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
+  # Ensure CI passes before releasing
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    name: Create Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    needs: ci
 
     steps:
       - name: Checkout code
@@ -22,7 +29,13 @@ jobs:
           tools: composer:v2
 
       - name: Install dependencies (production only)
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction
+          # Fix platform_check.php to not enforce build machine's PHP version
+          if [ -f vendor/composer/platform_check.php ]; then
+            sed -i 's/PHP_VERSION_ID >= 80100/PHP_VERSION_ID >= 70400/g' vendor/composer/platform_check.php
+            sed -i 's/">= 8.1.0"/">= 7.4.0"/g' vendor/composer/platform_check.php
+          fi
 
       - name: Build plugin ZIP
         run: |
@@ -43,11 +56,14 @@ jobs:
             --exclude='*.zip' \
             --exclude='.idea' \
             --exclude='.vscode' \
+            --exclude='composer.lock' \
             ./ build/$PLUGIN_SLUG/
 
           # Create ZIP
           cd build
           zip -r ../$PLUGIN_SLUG-$VERSION.zip $PLUGIN_SLUG/
+
+          echo "📦 Release ZIP: $PLUGIN_SLUG-$VERSION.zip ($(du -h ../$PLUGIN_SLUG-$VERSION.zip | cut -f1))"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

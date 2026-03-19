@@ -35,6 +35,9 @@ class Kernel {
     private ContextProvider $context;
     private int $maxIterations;
 
+    private const MAX_MESSAGE_LENGTH = 10000;
+    private const MAX_HISTORY_MESSAGES = 50;
+
     /** @var array Conversation message history for this session. */
     private array $messages = [];
 
@@ -42,7 +45,7 @@ class Kernel {
     private array $pendingActions = [];
 
     public function __construct() {
-        $settings = get_option('wpoc_settings', []);
+        $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
 
         // Initialize LLM client based on provider setting.
         $provider = $settings['llm_provider'] ?? 'openai';
@@ -94,13 +97,32 @@ class Kernel {
     public function handle(string $userMessage): array {
         $steps = [];
 
-        // Build system prompt with site context.
+        if (mb_strlen($userMessage) > self::MAX_MESSAGE_LENGTH) {
+            return [[
+                'type'    => 'error',
+                'content' => sprintf('Message too long. Maximum %d characters allowed.', self::MAX_MESSAGE_LENGTH),
+            ]];
+        }
+
+        // Build system prompt with fresh site context.
         $systemPrompt = $this->buildSystemPrompt();
 
-        $this->messages = [
-            ['role' => 'system', 'content' => $systemPrompt],
-            ['role' => 'user', 'content' => $userMessage],
-        ];
+        if (! empty($this->messages)) {
+            // Continuing an existing session — update system prompt and append new message.
+            $this->messages[0] = ['role' => 'system', 'content' => $systemPrompt];
+            $this->messages[]  = ['role' => 'user', 'content' => $userMessage];
+        } else {
+            // New session — initialize fresh.
+            $this->messages = [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userMessage],
+            ];
+        }
+
+        // Trim old messages to prevent token overflow on long sessions.
+        $this->trimMessages();
+
+        $emptyRetries = 0;
 
         for ($i = 0; $i < $this->maxIterations; $i++) {
             $steps[] = [
@@ -120,6 +142,29 @@ class Kernel {
                 break;
             }
 
+            // Detect truncated response (hit token limit).
+            if (($response['finish_reason'] ?? '') === 'length') {
+                $steps[] = [
+                    'type'    => 'thinking',
+                    'content' => 'Response was truncated due to token limit. Requesting continuation...',
+                ];
+
+                // Add partial content if any.
+                if (! empty($response['content'])) {
+                    $this->messages[] = [
+                        'role'    => 'assistant',
+                        'content' => $response['content'],
+                    ];
+                }
+
+                // Ask LLM to continue/summarize.
+                $this->messages[] = [
+                    'role'    => 'user',
+                    'content' => 'Your previous response was cut off due to length limits. Please summarize what you have accomplished so far and provide your final answer concisely. If you still need to call a tool, do so now.',
+                ];
+                continue;
+            }
+
             // If LLM returns text content (final response or intermediate thought).
             if (! empty($response['content']) && empty($response['tool_calls'])) {
                 $steps[] = [
@@ -131,98 +176,50 @@ class Kernel {
 
             // If LLM wants to call tools.
             if (! empty($response['tool_calls'])) {
-                // Add assistant message with tool calls to history.
-                $assistantMessage = [
-                    'role'       => 'assistant',
-                    'content'    => $response['content'] ?? null,
-                    'tool_calls' => [],
-                ];
+                $emptyRetries = 0; // Reset empty counter on successful tool call.
 
-                foreach ($response['tool_calls'] as $toolCall) {
-                    $assistantMessage['tool_calls'][] = [
-                        'id'       => $toolCall['id'],
-                        'type'     => 'function',
-                        'function' => [
-                            'name'      => $toolCall['name'],
-                            'arguments' => wp_json_encode($toolCall['arguments']),
-                        ],
-                    ];
-
-                    $steps[] = [
-                        'type'    => 'tool_call',
-                        'content' => [
-                            'name'      => $toolCall['name'],
-                            'arguments' => $toolCall['arguments'],
-                        ],
-                    ];
-
-                    // Dispatch the tool.
-                    $observation = $this->tools->dispatch($toolCall['name'], $toolCall['arguments']);
-
-                    if (! empty($observation['requires_confirmation'])) {
-                        // Store pending action and ask user to confirm.
-                        $actionId = wp_generate_uuid4();
-                        $this->pendingActions[$actionId] = [
-                            'tool_name' => $toolCall['name'],
-                            'params'    => $toolCall['arguments'],
-                            'tool_call_id' => $toolCall['id'],
-                        ];
-
-                        $steps[] = [
-                            'type'    => 'confirmation',
-                            'content' => [
-                                'action_id'  => $actionId,
-                                'tool_name'  => $toolCall['name'],
-                                'params'     => $toolCall['arguments'],
-                                'message'    => $observation['message'],
-                            ],
-                        ];
-
-                        // Feed a "waiting for confirmation" observation back to LLM.
-                        $this->messages[] = $assistantMessage;
-                        $this->messages[] = [
-                            'role'         => 'tool',
-                            'tool_call_id' => $toolCall['id'],
-                            'content'      => wp_json_encode([
-                                'status'  => 'pending_confirmation',
-                                'message' => 'Action requires user confirmation. Waiting for approval.',
-                            ]),
-                        ];
-
-                        // Stop the loop — wait for user confirmation.
-                        return $steps;
-                    }
-
-                    // Read-only tool: add observation.
-                    $steps[] = [
-                        'type'    => 'observation',
-                        'content' => $observation,
-                    ];
-
-                    $this->messages[] = $assistantMessage;
-                    $this->messages[] = [
-                        'role'         => 'tool',
-                        'tool_call_id' => $toolCall['id'],
-                        'content'      => wp_json_encode($observation),
-                    ];
-
-                    // Reset assistant message for next iteration.
-                    $assistantMessage = [
-                        'role'       => 'assistant',
-                        'content'    => null,
-                        'tool_calls' => [],
-                    ];
+                $result = $this->processToolCalls($response, $steps);
+                if ($result === 'pause') {
+                    return $steps;
                 }
-
                 continue;
             }
 
-            // No content and no tool calls — shouldn't happen, but handle gracefully.
+            // No content and no tool calls — attempt recovery.
+            $emptyRetries++;
+            if ($emptyRetries <= 1) {
+                $steps[] = [
+                    'type'    => 'thinking',
+                    'content' => 'LLM returned empty response. Attempting recovery...',
+                ];
+                $this->messages[] = [
+                    'role'    => 'user',
+                    'content' => 'You stopped without providing a final answer. Please review the conversation and provide your complete response now. If the task is too complex, explain what you can do and suggest how to break it into smaller steps.',
+                ];
+                continue;
+            }
+
+            // Recovery failed — provide friendly error.
             $steps[] = [
                 'type'    => 'response',
-                'content' => 'Agent completed without a final response.',
+                'content' => '⚠️ Xin lỗi, tôi gặp khó khăn khi xử lý yêu cầu này. '
+                    . 'Yêu cầu có thể quá phức tạp để xử lý trong một lần. '
+                    . "Bạn có thể thử:\n"
+                    . "1. **Chia nhỏ yêu cầu** — ví dụ: tạo dàn ý trước, sau đó viết từng phần.\n"
+                    . "2. **Đơn giản hóa** — bớt điều kiện hoặc giảm độ dài yêu cầu.\n"
+                    . "3. **Thử lại** — đôi khi chạy lại sẽ cho kết quả tốt hơn.",
             ];
             break;
+        }
+
+        // Max iterations exhausted without a response.
+        $lastStep = end($steps);
+        if ($lastStep && $lastStep['type'] === 'thinking') {
+            $steps[] = [
+                'type'    => 'response',
+                'content' => '⚠️ Tác vụ quá phức tạp, tôi đã xử lý qua ' . $this->maxIterations
+                    . ' bước nhưng chưa hoàn thành. Hãy thử chia nhỏ yêu cầu để tôi xử lý từng phần.',
+            ];
         }
 
         return $steps;
@@ -284,6 +281,7 @@ class Kernel {
      */
     private function resumeLoop(): array {
         $steps = [];
+        $emptyRetries = 0;
 
         for ($i = 0; $i < $this->maxIterations; $i++) {
             $steps[] = [
@@ -301,6 +299,25 @@ class Kernel {
                 break;
             }
 
+            // Detect truncated response.
+            if (($response['finish_reason'] ?? '') === 'length') {
+                $steps[] = [
+                    'type'    => 'thinking',
+                    'content' => 'Response was truncated. Requesting continuation...',
+                ];
+                if (! empty($response['content'])) {
+                    $this->messages[] = [
+                        'role'    => 'assistant',
+                        'content' => $response['content'],
+                    ];
+                }
+                $this->messages[] = [
+                    'role'    => 'user',
+                    'content' => 'Your previous response was cut off due to length limits. Please summarize what you have accomplished so far and provide your final answer concisely. If you still need to call a tool, do so now.',
+                ];
+                continue;
+            }
+
             // Final text response — agent is done.
             if (! empty($response['content']) && empty($response['tool_calls'])) {
                 $steps[] = [
@@ -310,97 +327,131 @@ class Kernel {
                 break;
             }
 
-            // Tool calls — same logic as handle().
+            // Tool calls.
             if (! empty($response['tool_calls'])) {
-                $assistantMessage = [
-                    'role'       => 'assistant',
-                    'content'    => $response['content'] ?? null,
-                    'tool_calls' => [],
-                ];
-
-                foreach ($response['tool_calls'] as $toolCall) {
-                    $assistantMessage['tool_calls'][] = [
-                        'id'       => $toolCall['id'],
-                        'type'     => 'function',
-                        'function' => [
-                            'name'      => $toolCall['name'],
-                            'arguments' => wp_json_encode($toolCall['arguments']),
-                        ],
-                    ];
-
-                    $steps[] = [
-                        'type'    => 'tool_call',
-                        'content' => [
-                            'name'      => $toolCall['name'],
-                            'arguments' => $toolCall['arguments'],
-                        ],
-                    ];
-
-                    $observation = $this->tools->dispatch($toolCall['name'], $toolCall['arguments']);
-
-                    if (! empty($observation['requires_confirmation'])) {
-                        $actionId = wp_generate_uuid4();
-                        $this->pendingActions[$actionId] = [
-                            'tool_name'    => $toolCall['name'],
-                            'params'       => $toolCall['arguments'],
-                            'tool_call_id' => $toolCall['id'],
-                        ];
-
-                        $steps[] = [
-                            'type'    => 'confirmation',
-                            'content' => [
-                                'action_id'  => $actionId,
-                                'tool_name'  => $toolCall['name'],
-                                'params'     => $toolCall['arguments'],
-                                'message'    => $observation['message'],
-                            ],
-                        ];
-
-                        $this->messages[] = $assistantMessage;
-                        $this->messages[] = [
-                            'role'         => 'tool',
-                            'tool_call_id' => $toolCall['id'],
-                            'content'      => wp_json_encode([
-                                'status'  => 'pending_confirmation',
-                                'message' => 'Action requires user confirmation. Waiting for approval.',
-                            ]),
-                        ];
-
-                        // Pause again — wait for next confirmation.
-                        return $steps;
-                    }
-
-                    $steps[] = [
-                        'type'    => 'observation',
-                        'content' => $observation,
-                    ];
-
-                    $this->messages[] = $assistantMessage;
-                    $this->messages[] = [
-                        'role'         => 'tool',
-                        'tool_call_id' => $toolCall['id'],
-                        'content'      => wp_json_encode($observation),
-                    ];
-
-                    $assistantMessage = [
-                        'role'       => 'assistant',
-                        'content'    => null,
-                        'tool_calls' => [],
-                    ];
+                $emptyRetries = 0;
+                $result = $this->processToolCalls($response, $steps);
+                if ($result === 'pause') {
+                    return $steps;
                 }
-
                 continue;
             }
 
-            // No content, no tool calls.
+            // No content, no tool calls — attempt recovery.
+            $emptyRetries++;
+            if ($emptyRetries <= 1) {
+                $steps[] = [
+                    'type'    => 'thinking',
+                    'content' => 'LLM returned empty response. Attempting recovery...',
+                ];
+                $this->messages[] = [
+                    'role'    => 'user',
+                    'content' => 'You stopped without providing a final answer. Please review the conversation and provide your complete response now.',
+                ];
+                continue;
+            }
+
             $steps[] = [
                 'type'    => 'response',
-                'content' => 'Agent completed without a final response.',
+                'content' => '⚠️ Xin lỗi, tôi gặp khó khăn khi hoàn thành yêu cầu này. '
+                    . 'Hãy thử chia nhỏ yêu cầu hoặc thử lại.',
             ];
             break;
         }
 
         return $steps;
+    }
+
+    /**
+     * Process tool calls from an LLM response.
+     *
+     * Shared logic between handle() and resumeLoop().
+     *
+     * @param  array $response LLM response with tool_calls.
+     * @param  array &$steps   Steps array (passed by reference to append).
+     * @return string|null     'pause' if waiting for confirmation, null otherwise.
+     */
+    private function processToolCalls(array $response, array &$steps): ?string {
+        $assistantMessage = [
+            'role'       => 'assistant',
+            'content'    => $response['content'] ?? null,
+            'tool_calls' => [],
+        ];
+
+        foreach ($response['tool_calls'] as $toolCall) {
+            $assistantMessage['tool_calls'][] = [
+                'id'       => $toolCall['id'],
+                'type'     => 'function',
+                'function' => [
+                    'name'      => $toolCall['name'],
+                    'arguments' => wp_json_encode($toolCall['arguments']),
+                ],
+            ];
+
+            $steps[] = [
+                'type'    => 'tool_call',
+                'content' => [
+                    'name'      => $toolCall['name'],
+                    'arguments' => $toolCall['arguments'],
+                ],
+            ];
+
+            // Dispatch the tool.
+            $observation = $this->tools->dispatch($toolCall['name'], $toolCall['arguments']);
+
+            if (! empty($observation['requires_confirmation'])) {
+                $actionId = wp_generate_uuid4();
+                $this->pendingActions[$actionId] = [
+                    'tool_name'    => $toolCall['name'],
+                    'params'       => $toolCall['arguments'],
+                    'tool_call_id' => $toolCall['id'],
+                ];
+
+                $steps[] = [
+                    'type'    => 'confirmation',
+                    'content' => [
+                        'action_id'  => $actionId,
+                        'tool_name'  => $toolCall['name'],
+                        'params'     => $toolCall['arguments'],
+                        'message'    => $observation['message'],
+                    ],
+                ];
+
+                $this->messages[] = $assistantMessage;
+                $this->messages[] = [
+                    'role'         => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content'      => wp_json_encode([
+                        'status'  => 'pending_confirmation',
+                        'message' => 'Action requires user confirmation. Waiting for approval.',
+                    ]),
+                ];
+
+                return 'pause';
+            }
+
+            // Read-only tool: add observation.
+            $steps[] = [
+                'type'    => 'observation',
+                'content' => $observation,
+            ];
+
+            $this->messages[] = $assistantMessage;
+            $this->messages[] = [
+                'role'         => 'tool',
+                'tool_call_id' => $toolCall['id'],
+                'content'      => wp_json_encode($observation),
+            ];
+
+            // Reset for next tool call in this batch.
+            $assistantMessage = [
+                'role'       => 'assistant',
+                'content'    => null,
+                'tool_calls' => [],
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -443,6 +494,26 @@ class Kernel {
      */
     public function getMessages(): array {
         return $this->messages;
+    }
+
+    /**
+     * Trim conversation history to prevent token overflow.
+     *
+     * Keeps the system prompt (index 0) and the most recent messages.
+     * This ensures long sessions don't exceed LLM context limits.
+     */
+    private function trimMessages(): void {
+        $count = count($this->messages);
+        if ($count <= self::MAX_HISTORY_MESSAGES) {
+            return;
+        }
+
+        // Keep system prompt + last (MAX - 10) messages for safety margin.
+        $keepCount   = self::MAX_HISTORY_MESSAGES - 10;
+        $systemMsg   = $this->messages[0];
+        $recentMsgs  = array_slice($this->messages, -$keepCount);
+
+        $this->messages = array_merge([$systemMsg], $recentMsgs);
     }
 
     /**
@@ -500,10 +571,31 @@ You have access to tools that let you:
 6. Return observations as JSON so the system can parse your results.
 7. If a tool returns an error, analyze it and try a different approach or ask the user for help.
 
+## CRITICAL: Action Execution Rules
+**YOU ARE AN ACTION AGENT, NOT A CHATBOT.**
+
+8. **NEVER just write content as text in the chat. ALWAYS use the appropriate tool to create/publish it on WordPress.**
+   - If the user asks to "write a blog post" → you MUST call `wp_content_manager` to create the post, not just output the text.
+   - If the user asks to "create a product" → you MUST call `woo_product_manager`, not just describe it.
+   - If the user asks to "create a page" → you MUST call `wp_page_manager`.
+
+9. **Action intent keywords** — if the user's request contains ANY of these words, you MUST call the corresponding tool to complete the action:
+   - Vietnamese: viết bài, tạo bài, đăng bài, xuất bản, tạo sản phẩm, tạo trang, cập nhật, xóa, sửa
+   - English: write, create, post, publish, update, delete, edit, make, add
+
+10. **Complete the full workflow:**
+    - Step 1: Inspect system state (categories, existing content)
+    - Step 2: Generate content mentally (do NOT output to chat)
+    - Step 3: Call the tool with the complete content as parameters
+    - Step 4: Confirm the result to user with a summary
+
+11. **DO NOT stop after generating text.** If you have written content, you are NOT done until you have called a tool to save/publish it.
+
 ## Response Format
 - When thinking, explain your reasoning briefly.
 - When acting, call the appropriate tool with correct parameters.
-- When done, summarize what you accomplished.
+- When done, summarize what you accomplished with key details (post ID, URL, status).
+- **IMPORTANT: Your final response should be a summary of ACTIONS TAKEN, not the content itself.**
 
 {$siteContext}
 PROMPT;

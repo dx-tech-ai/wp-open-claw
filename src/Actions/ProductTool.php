@@ -17,6 +17,40 @@ use OpenClaw\Tools\DynamicConfirmInterface;
  */
 class ProductTool implements ToolInterface, DynamicConfirmInterface {
 
+    /**
+     * Validate URL is safe (not pointing to internal/private networks).
+     */
+    private function isUrlSafe(string $url): bool {
+        $parsed = wp_parse_url($url);
+        if (! $parsed || empty($parsed['host'])) {
+            return false;
+        }
+
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = strtolower($parsed['host']);
+
+        $blocked_hosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', 'metadata.google.internal'];
+        if (in_array($host, $blocked_hosts, true)) {
+            return false;
+        }
+
+        $ip = gethostbyname($host);
+        if ($ip === $host) {
+            return false;
+        }
+
+        $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        if (! filter_var($ip, FILTER_VALIDATE_IP, $flags)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function getName(): string {
         return 'woo_product_manager';
     }
@@ -408,7 +442,7 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
                 'categories'        => $cat_names,
                 'tags'              => $tag_names,
                 'image_url'         => wp_get_attachment_url($product->get_image_id()) ?: null,
-                'date_created'      => $product->get_date_created()?->date('Y-m-d H:i:s'),
+                'date_created'      => ($dc = $product->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
                 'edit_url'          => admin_url("post.php?post={$product_id}&action=edit"),
                 'view_url'          => get_permalink($product_id),
             ],
@@ -507,6 +541,10 @@ class ProductTool implements ToolInterface, DynamicConfirmInterface {
      * Upload image from URL and set as product image.
      */
     private function setProductImage(int $product_id, string $url): void {
+        if (! $this->isUrlSafe($url)) {
+            return;
+        }
+
         if (! function_exists('media_sideload_image')) {
             require_once ABSPATH . 'wp-admin/includes/image.php';
             require_once ABSPATH . 'wp-admin/includes/file.php';

@@ -15,13 +15,15 @@ use Generator;
  */
 class OpenAIClient implements ClientInterface {
 
+    use ErrorMapper;
+
     private const API_URL = 'https://api.openai.com/v1/chat/completions';
 
     private string $apiKey;
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = get_option('wpoc_settings', []);
+        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $this->apiKey   = $apiKey ?? ($settings['openai_api_key'] ?? '');
         $this->model    = $model ?? ($settings['openai_model'] ?? 'gpt-4o');
     }
@@ -31,8 +33,9 @@ class OpenAIClient implements ClientInterface {
      */
     public function chat(array $messages, array $tools = []): array {
         $body = [
-            'model'    => $this->model,
-            'messages' => $messages,
+            'model'      => $this->model,
+            'messages'   => $messages,
+            'max_tokens' => 8192,
         ];
 
         if (! empty($tools)) {
@@ -60,9 +63,11 @@ class OpenAIClient implements ClientInterface {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200) {
+            $rawMsg = $data['error']['message'] ?? '';
             return [
                 'error'   => true,
-                'message' => $data['error']['message'] ?? "API error (HTTP {$status})",
+                'message' => $this->mapApiError($status, $rawMsg),
+                'error_code' => $status,
             ];
         }
 
@@ -98,9 +103,9 @@ class OpenAIClient implements ClientInterface {
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_TIMEOUT        => 120,
             CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
-        $buffer        = '';
         $tool_calls    = [];
         $content       = '';
         $finish_reason = null;

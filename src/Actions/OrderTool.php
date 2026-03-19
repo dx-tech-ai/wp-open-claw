@@ -121,7 +121,7 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
                 'status'         => $order->get_status(),
                 'total'          => $order->get_total(),
                 'currency'       => $order->get_currency(),
-                'date_created'   => $order->get_date_created()?->date('Y-m-d H:i:s'),
+                'date_created'   => ($dc = $order->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
                 'customer_name'  => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
                 'customer_email' => $order->get_billing_email(),
                 'items_count'    => $order->get_item_count(),
@@ -170,8 +170,8 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
                 'tax_total'       => $order->get_total_tax(),
                 'currency'        => $order->get_currency(),
                 'payment_method'  => $order->get_payment_method_title(),
-                'date_created'    => $order->get_date_created()?->date('Y-m-d H:i:s'),
-                'date_paid'       => $order->get_date_paid()?->date('Y-m-d H:i:s'),
+                'date_created'    => ($dc = $order->get_date_created()) ? $dc->date('Y-m-d H:i:s') : null,
+                'date_paid'       => ($dp = $order->get_date_paid()) ? $dp->date('Y-m-d H:i:s') : null,
                 'customer'        => [
                     'name'  => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
                     'email' => $order->get_billing_email(),
@@ -222,20 +222,20 @@ class OrderTool implements ToolInterface, DynamicConfirmInterface {
         $period = sanitize_text_field($p['period'] ?? 'month');
 
         // Calculate date range.
-        $now = current_time('timestamp');
+        $now = current_datetime();
         switch ($period) {
             case 'today':
-                $date_after = gmdate('Y-m-d 00:00:00', $now);
+                $date_after = $now->format('Y-m-d 00:00:00');
                 break;
             case 'week':
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-7 days', $now));
+                $date_after = $now->modify('-7 days')->format('Y-m-d 00:00:00');
                 break;
             case 'year':
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-365 days', $now));
+                $date_after = $now->modify('-365 days')->format('Y-m-d 00:00:00');
                 break;
             case 'month':
             default:
-                $date_after = gmdate('Y-m-d 00:00:00', strtotime('-30 days', $now));
+                $date_after = $now->modify('-30 days')->format('Y-m-d 00:00:00');
                 break;
         }
 

@@ -60,14 +60,17 @@ class Dashboard {
             <div class="wpoc-palette">
                 <div class="wpoc-header">
                     <div class="wpoc-logo">⚡ Open Claw</div>
-                    <button class="wpoc-close" aria-label="Close">&times;</button>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <button id="wpoc-new-chat" class="wpoc-new-chat" aria-label="New Chat" title="New Chat">🗑️</button>
+                        <button class="wpoc-close" aria-label="Close">&times;</button>
+                    </div>
                 </div>
                 <div class="wpoc-input-area">
-                    <input type="text"
-                           id="wpoc-input"
-                           class="wpoc-search-input"
-                           placeholder="<?php esc_attr_e('Ask me to do something... (e.g. "Create a post about Da Nang")', 'wp-open-claw'); ?>"
-                           autocomplete="off" />
+                    <textarea id="wpoc-input"
+                              class="wpoc-search-input"
+                              rows="1"
+                              placeholder="<?php esc_attr_e('Ask me to do something... (e.g. "Create a post about Da Nang")', 'wp-open-claw'); ?>"
+                              autocomplete="off"></textarea>
                     <button id="wpoc-send" class="wpoc-send-btn" aria-label="Send">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>

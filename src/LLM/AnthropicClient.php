@@ -15,13 +15,15 @@ use Generator;
  */
 class AnthropicClient implements ClientInterface {
 
+    use ErrorMapper;
+
     private const API_URL = 'https://api.anthropic.com/v1/messages';
 
     private string $apiKey;
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = get_option('wpoc_settings', []);
+        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
         $this->apiKey   = $apiKey ?? ($settings['anthropic_api_key'] ?? '');
         $this->model    = $model ?? ($settings['anthropic_model'] ?? 'claude-sonnet-4-20250514');
     }
@@ -44,7 +46,7 @@ class AnthropicClient implements ClientInterface {
 
         $body = [
             'model'      => $this->model,
-            'max_tokens' => 4096,
+            'max_tokens' => 8192,
             'messages'   => $conversationMessages,
         ];
 
@@ -77,9 +79,11 @@ class AnthropicClient implements ClientInterface {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200) {
+            $rawMsg = $data['error']['message'] ?? '';
             return [
                 'error'   => true,
-                'message' => $data['error']['message'] ?? "API error (HTTP {$status})",
+                'message' => $this->mapApiError($status, $rawMsg),
+                'error_code' => $status,
             ];
         }
 
