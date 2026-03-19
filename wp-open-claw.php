@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       WP Open Claw
+ * Plugin Name:       Open Claw WP
  * Plugin URI:        https://github.com/dx-tech-ai/wp-open-claw
  * Description:       AI Agent tự trị cho WordPress — thực thi hành động thật qua vòng lặp ReAct với Command Palette UI.
  * Version:           1.0.0
