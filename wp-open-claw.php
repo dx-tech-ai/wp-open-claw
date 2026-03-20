@@ -10,8 +10,7 @@
  * Author URI:        https://github.com/dx-tech-ai
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       wp-open-claw
- * Domain Path:       /languages
+ * Text Domain:       open-claw-wp
  *
  * @package OpenClaw
  */
@@ -54,7 +53,7 @@ register_deactivation_hook(__FILE__, 'wpoc_deactivate');
  */
 function wpoc_init(): void {
     // Load text domain.
-    load_plugin_textdomain('wp-open-claw', false, dirname(WPOC_BASENAME) . '/languages');
+    load_plugin_textdomain('open-claw-wp', false, dirname(WPOC_BASENAME) . '/languages');
 
     // Boot Admin Settings & Dashboard.
     if (is_admin()) {
@@ -69,6 +68,10 @@ function wpoc_init(): void {
     add_action('rest_api_init', function (): void {
         $controller = new \OpenClaw\REST\AgentController();
         $controller->register_routes();
+
+        // Telegram webhook route.
+        $telegram = new \OpenClaw\Telegram\TelegramController();
+        $telegram->register_webhook_route();
     });
 }
 add_action('plugins_loaded', 'wpoc_init');

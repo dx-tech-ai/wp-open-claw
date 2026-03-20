@@ -1,8 +1,8 @@
 === Open Claw WP ===
 Contributors: dxtechai
-Tags: ai, agent, automation, woocommerce, chatbot
+Tags: ai, agent, automation, woocommerce, chatbot, telegram
 Requires at least: 6.4
-Tested up to: 6.7
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -24,10 +24,11 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 * 🛒 **WooCommerce Ready** — Auto-detects WooCommerce and activates product, order, and customer management tools
 * 💾 **Session Persistence** — Saves session state to resume after action confirmation
 * 🔍 **Web Research** — Built-in web search via DuckDuckGo (free) or Google Custom Search
+* 📱 **Telegram Bot** — Control your WordPress site via Telegram with inline keyboard confirmations
 
-= 11 Built-in Tools =
+= 12 Built-in Tools =
 
-**WordPress Core (8 tools):**
+**WordPress Core (9 tools):**
 
 1. **Content Manager** (`wp_content_manager`) — Create/update posts with categories, tags, and HTML content
 2. **System Inspector** (`wp_system_inspector`) — View site info, active plugins, categories, tags, post types
@@ -37,12 +38,13 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 6. **Page Manager** (`wp_page_manager`) — Create/update/delete/list pages, supports templates & sub-pages
 7. **User Inspector** (`wp_user_inspector`) — List users, view details, count by role
 8. **Analytics Reader** (`wp_analytics_reader`) — Post stats by status, comment stats, content summary
+9. **Report & Analytics** (`wp_report`) — Dashboard overview, order reports, product reports, content reports
 
 **WooCommerce (3 tools — auto-activated when WooCommerce is active):**
 
-9. **Product Manager** (`woo_product_manager`) — Full product CRUD (name, price, SKU, stock, images), manage product categories
-10. **Order Inspector** (`woo_order_inspector`) — List/view orders, update status, revenue statistics
-11. **Customer Inspector** (`woo_customer_inspector`) — List/search customers, customer stats, top customers
+10. **Product Manager** (`woo_product_manager`) — Full product CRUD (name, price, SKU, stock, images), manage product categories
+11. **Order Inspector** (`woo_order_inspector`) — List/view orders, update status, revenue statistics
+12. **Customer Inspector** (`woo_customer_inspector`) — List/search customers, customer stats, top customers
 
 = Architecture =
 
@@ -51,6 +53,7 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 * **Context Provider** — Auto-injects site snapshot (categories, post types, user) into LLM context
 * **Auto-Discovery** — Automatically discovers and registers tools from the `Actions/` directory
 * **REST API** — Two endpoints: `/agent/chat` and `/agent/confirm` with session management
+* **Telegram Controller** — Webhook-based bot with inline keyboard confirmations and session per chat
 
 = Usage Examples =
 
@@ -69,6 +72,12 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 * "Update order #123 status to completed"
 * "Find customers with 'gmail' in their email"
 * "Show me the top 5 customers by total spending"
+
+**Reports & Analytics:**
+* "Show me dashboard overview"
+* "Thống kê đơn hàng tháng này"
+* "Sản phẩm bán chạy nhất"
+* "Báo cáo bài viết và trang"
 
 == Installation ==
 
@@ -104,6 +113,26 @@ Choose one of three providers:
 = Agent Settings =
 * **Max Iterations** — Maximum ReAct loop iterations (1–20, default: 10)
 
+= Telegram Integration =
+Control the AI agent directly from Telegram:
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Copy the Bot Token to **Open Claw → Telegram → Bot Token**
+3. Add your Telegram Chat ID to **Allowed Chat IDs** (send a message to your bot, then use the Telegram Bot API `getUpdates` method to find your chat ID)
+4. Click **Register Webhook** to connect your site to Telegram
+5. Send messages to your bot — the AI agent will respond!
+
+**Telegram Features:**
+* Send natural language messages to control WordPress
+* Inline keyboard buttons for action confirmations (Approve/Reject)
+* Session persistence per chat — multi-turn conversations
+* Automatic Markdown fallback if formatting fails
+* Secure with secret token verification and chat ID whitelist
+
+**Commands:**
+* `/start` — Show help message
+* `/reset` — Clear current session
+
 == External Services ==
 
 This plugin connects to third-party AI and search services to provide its core functionality. **No data is sent to any external service until the user explicitly configures an API key and initiates a request.**
@@ -138,6 +167,12 @@ When configured, the web research tool can use Google Custom Search API instead 
 * Terms of Use: [https://developers.google.com/terms](https://developers.google.com/terms)
 * Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)
 
+= Telegram Bot API =
+When Telegram integration is enabled, the plugin sends messages to the Telegram Bot API to deliver responses and inline keyboards to the configured bot.
+* Service URL: [https://api.telegram.org](https://api.telegram.org)
+* Terms of Use: [https://telegram.org/tos](https://telegram.org/tos)
+* Privacy Policy: [https://telegram.org/privacy](https://telegram.org/privacy)
+
 == Frequently Asked Questions ==
 
 = Is the plugin free? =
@@ -158,6 +193,9 @@ Yes! The agent supports Chain Actions — after confirming an action, the agent 
 = Does it support Custom Post Types? =
 Currently supports Posts, Pages, and WooCommerce Products. Custom Post Type support will be added in a future release.
 
+= Can I control the agent from Telegram? =
+Yes! Enable Telegram integration in the settings, add your bot token and chat ID, then register the webhook. You can send natural language messages to the bot and it will control your WordPress site, including action confirmations via inline keyboard buttons.
+
 == Screenshots ==
 
 1. Command Palette with glassmorphism interface
@@ -169,9 +207,12 @@ Currently supports Posts, Pages, and WooCommerce Products. Custom Post Type supp
 
 = 1.0.0 =
 * Initial release
-* 11 built-in tools (8 WordPress core + 3 WooCommerce)
+* 12 built-in tools (9 WordPress core + 3 WooCommerce)
 * Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 * Command Palette UI with Ctrl+G shortcut
+* Telegram Bot integration with inline keyboard confirmations
+* Report & Analytics tool (dashboard, order/product/content reports)
+* Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)
 * ReAct Loop engine with configurable max iterations
 * DuckDuckGo web search (free, no API key needed)
 * Action confirmation system with Dynamic Confirmation for mixed read/write tools

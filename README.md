@@ -22,10 +22,11 @@
 | 🛒 **WooCommerce Ready** | Tự động kích hoạt tool quản lý sản phẩm, đơn hàng, khách hàng |
 | 💾 **Session Persistence** | Lưu trạng thái phiên làm việc qua WordPress transients |
 | 🔍 **Web Research** | Tìm kiếm web trực tiếp (DuckDuckGo miễn phí hoặc Google CSE) |
+| 📱 **Telegram Bot** | Điều khiển WordPress qua Telegram với xác nhận bằng inline keyboard |
 
-## 🛠️ 11 Tools tích hợp
+## 🛠️ 12 Tools tích hợp
 
-### WordPress Core (8 tools)
+### WordPress Core (9 tools)
 
 | # | Tool | Tên hàm | Chức năng |
 |---|------|---------|-----------|
@@ -37,14 +38,15 @@
 | 6 | **Page Manager** | `wp_page_manager` | Tạo/sửa/xóa/liệt kê Pages, hỗ trợ template & sub-pages |
 | 7 | **User Inspector** | `wp_user_inspector` | Xem danh sách users, chi tiết, thống kê theo role |
 | 8 | **Analytics Reader** | `wp_analytics_reader` | Thống kê bài viết, comments, tổng quan nội dung |
+| 9 | **Report & Analytics** | `wp_report` | Dashboard tổng quan, báo cáo đơn hàng, sản phẩm, nội dung |
 
 ### WooCommerce (3 tools — tự động kích hoạt)
 
 | # | Tool | Tên hàm | Chức năng |
 |---|------|---------|-----------|
-| 9 | **Product Manager** | `woo_product_manager` | CRUD sản phẩm (tên, giá, SKU, kho, ảnh), quản lý categories |
-| 10 | **Order Inspector** | `woo_order_inspector` | Xem đơn hàng, cập nhật trạng thái, thống kê doanh thu |
-| 11 | **Customer Inspector** | `woo_customer_inspector` | Xem/tìm kiếm khách hàng, thống kê, top customers |
+| 10 | **Product Manager** | `woo_product_manager` | CRUD sản phẩm (tên, giá, SKU, kho, ảnh), quản lý categories |
+| 11 | **Order Inspector** | `woo_order_inspector` | Xem đơn hàng, cập nhật trạng thái, thống kê doanh thu |
+| 12 | **Customer Inspector** | `woo_customer_inspector` | Xem/tìm kiếm khách hàng, thống kê, top customers |
 
 ## 🏗️ Kiến trúc
 
@@ -52,7 +54,7 @@
 wp-open-claw/
 ├── wp-open-claw.php          # Entry point, constants, hooks
 ├── src/
-│   ├── Actions/              # 11 Tool implementations
+│   ├── Actions/              # 12 Tool implementations
 │   │   ├── ContentTool.php
 │   │   ├── SystemTool.php
 │   │   ├── ResearchTool.php
@@ -61,6 +63,7 @@ wp-open-claw/
 │   │   ├── PageTool.php
 │   │   ├── UserInspector.php
 │   │   ├── AnalyticsReader.php
+│   │   ├── ReportTool.php
 │   │   ├── ProductTool.php     # WooCommerce
 │   │   ├── OrderTool.php       # WooCommerce
 │   │   └── CustomerTool.php    # WooCommerce
@@ -81,6 +84,10 @@ wp-open-claw/
 │       ├── ToolInterface.php
 │       ├── DynamicConfirmInterface.php
 │       └── Manager.php         # Tool registry & dispatcher
+│   ├── Telegram/
+│   │   ├── TelegramController.php  # Webhook handler
+│   │   ├── TelegramClient.php      # Telegram Bot API client
+│   │   └── StepFormatter.php       # Format agent steps for Telegram
 ├── assets/
 │   ├── css/
 │   └── js/
@@ -146,6 +153,25 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 - **Max Iterations**: Số vòng lặp ReAct tối đa (1–20, mặc định: 10)
 
+### Telegram Bot
+
+1. Tạo bot từ [@BotFather](https://t.me/BotFather) trên Telegram
+2. Sao chép Bot Token vào **Open Claw → Telegram → Bot Token**
+3. Thêm Chat ID của bạn vào **Allowed Chat IDs**
+4. Nhấn **Register Webhook** để kết nối
+5. Gửi tin nhắn cho bot — AI agent sẽ phản hồi!
+
+**Tính năng Telegram:**
+- Gửi lệnh bằng ngôn ngữ tự nhiên để điều khiển WordPress
+- Nút Approve/Reject trực tiếp trên Telegram (inline keyboard)
+- Session riêng cho từng chat — hỗ trợ hội thoại nhiều lượt
+- Tự động fallback nếu Markdown không hợp lệ
+- Bảo mật với secret token và whitelist chat ID
+
+**Lệnh:**
+- `/start` — Hiển trợ giúp
+- `/reset` — Xóa phiên làm việc hiện tại
+
 ## 💡 Ví dụ sử dụng
 
 ### WordPress
@@ -168,6 +194,15 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 "Cập nhật đơn hàng #123 sang trạng thái completed"
 "Tìm khách hàng có email chứa 'gmail'"
 "Cho tôi xem top 5 khách hàng chi tiêu nhiều nhất"
+```
+
+### Báo cáo & Thống kê
+
+```
+"Cho tôi xem tổng quan dashboard"
+"Thống kê đơn hàng tháng này"
+"Sản phẩm bán chạy nhất"
+"Báo cáo bài viết và trang"
 ```
 
 ## ❓ FAQ
@@ -197,14 +232,22 @@ Có! Plugin tự động phát hiện WooCommerce và kích hoạt 3 tool: Produ
 Có! Agent hỗ trợ Chain Actions — sau khi xác nhận một hành động, agent tự động tiếp tục ReAct loop để thực hiện các hành động tiếp theo.
 </details>
 
+<details>
+<summary><strong>Có thể điều khiển agent qua Telegram không?</strong></summary>
+Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng ký webhook. Gửi tin nhắn cho bot và nó sẽ điều khiển WordPress, bao gồm xác nhận hành động qua nút inline keyboard.
+</details>
+
 ## 📋 Changelog
 
 ### 1.0.0
 
 - Initial release
-- 11 built-in tools (8 WordPress core + 3 WooCommerce)
+- 12 built-in tools (9 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 - Command Palette UI with `Ctrl+G` shortcut
+- Telegram Bot integration with inline keyboard confirmations
+- Report & Analytics tool (dashboard, order/product/content reports)
+- Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)
 - ReAct Loop engine with configurable max iterations
 - DuckDuckGo web search (free, no API key needed)
 - Dynamic Confirmation for mixed read/write tools

@@ -7,11 +7,12 @@ namespace OpenClaw\Actions;
 defined('ABSPATH') || exit;
 
 use OpenClaw\Tools\ToolInterface;
+use OpenClaw\Tools\DynamicConfirmInterface;
 
 /**
  * Page manager — create, update, list, delete WordPress pages.
  */
-class PageTool implements ToolInterface {
+class PageTool implements ToolInterface, DynamicConfirmInterface {
 
     public function getName(): string {
         return 'wp_page_manager';
@@ -70,6 +71,11 @@ class PageTool implements ToolInterface {
 
     public function requiresConfirmation(): bool {
         return true;
+    }
+
+    public function requiresConfirmationFor(array $params): bool {
+        $action = $params['action'] ?? '';
+        return in_array($action, ['create', 'update', 'delete'], true);
     }
 
     public function execute(array $params): array {

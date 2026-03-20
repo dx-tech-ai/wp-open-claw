@@ -137,28 +137,5 @@ class Manager {
             ];
         }
     }
-
-    /**
-     * Auto-discover and register all tools from the Actions directory.
-     */
-    public function autoDiscover(): void {
-        $actions_dir = WPOC_PATH . 'src/Actions/';
-
-        if (! is_dir($actions_dir)) {
-            return;
-        }
-
-        $files = glob($actions_dir . '*.php');
-
-        foreach ($files as $file) {
-            $class_name = 'OpenClaw\\Actions\\' . pathinfo($file, PATHINFO_FILENAME);
-
-            if (class_exists($class_name)) {
-                $instance = new $class_name();
-                if ($instance instanceof ToolInterface) {
-                    $this->register($instance);
-                }
-            }
-        }
-    }
 }
+
