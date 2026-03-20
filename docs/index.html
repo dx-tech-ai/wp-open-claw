@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WP Open Claw — AI Agent for WordPress</title>
-    <meta name="description" content="Autonomous AI Agent for WordPress — executes real actions instead of just generating text. 11 built-in tools, WooCommerce support, multi-LLM provider.">
+    <meta name="description" content="Autonomous AI Agent for WordPress — executes real actions instead of just generating text. 12 built-in tools, WooCommerce support, Telegram Bot, multi-LLM provider.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -396,6 +396,7 @@
                 <li><a href="#architecture">Architecture</a></li>
                 <li><a href="#providers">Providers</a></li>
                 <li><a href="#install">Install</a></li>
+                <li><a href="#telegram">Telegram</a></li>
             </ul>
             <a href="https://github.com/dx-tech-ai/wp-open-claw" class="nav-cta">⭐ GitHub</a>
             <button class="nav-toggle" id="navToggle" aria-label="Menu">
@@ -430,7 +431,7 @@
             </div>
             <div class="hero-stats">
                 <div class="hero-stat">
-                    <div class="hero-stat-value gradient-text">11</div>
+                    <div class="hero-stat-value gradient-text">12</div>
                     <div class="hero-stat-label">Built-in Tools</div>
                 </div>
                 <div class="hero-stat">
@@ -513,6 +514,16 @@
                     <h3>Session Persistence</h3>
                     <p>Conversation state is saved via WordPress transients. Resume multi-step tasks after confirming each action.</p>
                 </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon cyan">📱</div>
+                    <h3>Telegram Bot</h3>
+                    <p>Control your WordPress site via Telegram. Send natural language commands, receive responses, and confirm actions with inline keyboard buttons.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon purple">📊</div>
+                    <h3>Reports & Analytics</h3>
+                    <p>Dashboard overview, order reports with daily breakdown, product best sellers & low stock alerts, content statistics.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -522,12 +533,12 @@
         <div class="container">
             <div class="reveal">
                 <p class="section-label">Tools</p>
-                <h2 class="section-title">11 Built-in Tools</h2>
+                <h2 class="section-title">12 Built-in Tools</h2>
                 <p class="section-desc">Every tool follows the same interface: schema for the LLM, smart confirmation, and structured observation output.</p>
             </div>
             <div class="tools-tabs reveal">
-                <button class="tools-tab active" data-tab="all">All (11)</button>
-                <button class="tools-tab" data-tab="wp">WordPress (8)</button>
+                <button class="tools-tab active" data-tab="all">All (12)</button>
+                <button class="tools-tab" data-tab="wp">WordPress (9)</button>
                 <button class="tools-tab" data-tab="woo">WooCommerce (3)</button>
             </div>
             <div class="tools-grid reveal">
@@ -539,9 +550,10 @@
                 <div class="tool-card" data-type="wp"><div class="tool-num">6</div><div class="tool-info"><h4>Page Manager</h4><p class="tool-fn">wp_page_manager</p><p>Create/update/delete pages with templates & sub-page support</p></div></div>
                 <div class="tool-card" data-type="wp"><div class="tool-num">7</div><div class="tool-info"><h4>User Inspector</h4><p class="tool-fn">wp_user_inspector</p><p>List users, view details, stats by role</p></div></div>
                 <div class="tool-card" data-type="wp"><div class="tool-num">8</div><div class="tool-info"><h4>Analytics Reader</h4><p class="tool-fn">wp_analytics_reader</p><p>Post stats, comment stats, content summary, recent posts</p></div></div>
-                <div class="tool-card" data-type="woo"><div class="tool-num woo">9</div><div class="tool-info"><h4>Product Manager</h4><p class="tool-fn">woo_product_manager</p><p>Full CRUD — name, price, SKU, stock, images, product categories</p></div></div>
-                <div class="tool-card" data-type="woo"><div class="tool-num woo">10</div><div class="tool-info"><h4>Order Inspector</h4><p class="tool-fn">woo_order_inspector</p><p>List/view orders, update status, revenue statistics by period</p></div></div>
-                <div class="tool-card" data-type="woo"><div class="tool-num woo">11</div><div class="tool-info"><h4>Customer Inspector</h4><p class="tool-fn">woo_customer_inspector</p><p>List/search customers, customer stats, top spenders</p></div></div>
+                <div class="tool-card" data-type="wp"><div class="tool-num">9</div><div class="tool-info"><h4>Report & Analytics</h4><p class="tool-fn">wp_report</p><p>Dashboard overview, order/product/content reports, best sellers, low stock</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">10</div><div class="tool-info"><h4>Product Manager</h4><p class="tool-fn">woo_product_manager</p><p>Full CRUD — name, price, SKU, stock, images, product categories</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">11</div><div class="tool-info"><h4>Order Inspector</h4><p class="tool-fn">woo_order_inspector</p><p>List/view orders, update status, revenue statistics by period</p></div></div>
+                <div class="tool-card" data-type="woo"><div class="tool-num woo">12</div><div class="tool-info"><h4>Customer Inspector</h4><p class="tool-fn">woo_customer_inspector</p><p>List/search customers, customer stats, top spenders</p></div></div>
             </div>
         </div>
     </section>
@@ -651,6 +663,56 @@
 
 <span class="hlc"># Dependencies are included — no composer install needed!</span>
 <span class="hlc"># Just activate in WP Admin and press Ctrl+G</span></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Telegram Integration -->
+    <section class="install" id="telegram" style="padding-top: 0;">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Telegram</p>
+                <h2 class="section-title">Control WordPress via Telegram</h2>
+                <p class="section-desc">Send natural language messages to your Telegram bot — the AI agent processes them and responds with inline keyboard confirmations.</p>
+            </div>
+            <div class="install-steps">
+                <div class="install-step reveal">
+                    <div class="install-step-num">1</div>
+                    <h4>Create Bot</h4>
+                    <p>Message <a href="https://t.me/BotFather" style="color:var(--accent-cyan)">@BotFather</a><br>on Telegram</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">2</div>
+                    <h4>Add Token</h4>
+                    <p>Paste Bot Token in<br>Open Claw → Telegram</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">3</div>
+                    <h4>Set Chat ID</h4>
+                    <p>Add your Telegram<br>chat ID to whitelist</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num">4</div>
+                    <h4>Register Webhook</h4>
+                    <p>Click the button &<br>start messaging!</p>
+                </div>
+            </div>
+            <div class="features-grid" style="margin-top: 32px;">
+                <div class="feature-card reveal">
+                    <div class="feature-icon cyan">💬</div>
+                    <h3>Natural Language</h3>
+                    <p>Send messages in any language. The AI agent understands and executes WordPress actions.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon green">✅</div>
+                    <h3>Inline Confirmations</h3>
+                    <p>Approve or Reject write actions directly in Telegram with inline keyboard buttons.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon orange">🔒</div>
+                    <h3>Secure</h3>
+                    <p>Secret token verification, chat ID whitelist. Only authorized users can control your site.</p>
+                </div>
             </div>
         </div>
     </section>

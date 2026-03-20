@@ -21,6 +21,8 @@ class Settings {
         'anthropic_api_key',
         'gemini_api_key',
         'google_cse_api_key',
+        'telegram_bot_token',
+        'telegram_secret_token',
     ];
 
     /**
@@ -38,6 +40,13 @@ class Settings {
             return '';
         }
         return base64_encode($iv . $encrypted);
+    }
+
+    /**
+     * Public wrapper for encrypt — used by TelegramController for webhook setup.
+     */
+    public static function encrypt_value(string $value): string {
+        return self::encrypt($value);
     }
 
     /**
@@ -84,15 +93,22 @@ class Settings {
     }
 
     public function add_menu_page(): void {
-        add_menu_page(
-            __('Open Claw', 'wp-open-claw'),
-            __('Open Claw', 'wp-open-claw'),
+        $hook = add_menu_page(
+            __('Open Claw', 'open-claw-wp'),
+            __('Open Claw', 'open-claw-wp'),
             'manage_options',
             self::PAGE_SLUG,
             [$this, 'render_settings_page'],
             'dashicons-superhero-alt',
             80
         );
+
+        // Enqueue wp-api on our settings page (provides wpApiSettings).
+        add_action('admin_enqueue_scripts', function (string $current_hook) use ($hook): void {
+            if ($current_hook === $hook) {
+                wp_enqueue_script('wp-api');
+            }
+        });
     }
 
     public function register_settings(): void {
@@ -109,31 +125,41 @@ class Settings {
         // LLM Provider Section.
         add_settings_section(
             'wpoc_llm',
-            __('LLM Configuration', 'wp-open-claw'),
+            __('LLM Configuration', 'open-claw-wp'),
             function () {
-                echo '<p>' . esc_html__('Configure your AI provider and API credentials.', 'wp-open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure your AI provider and API credentials.', 'open-claw-wp') . '</p>';
             },
-            self::PAGE_SLUG
+            self::PAGE_SLUG . '_llm'
         );
 
         // Search API Section.
         add_settings_section(
             'wpoc_search',
-            __('Web Research (Google Custom Search)', 'wp-open-claw'),
+            __('Web Research (Google Custom Search)', 'open-claw-wp'),
             function () {
-                echo '<p>' . esc_html__('Configure Google Custom Search for web research capabilities.', 'wp-open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure Google Custom Search for web research capabilities.', 'open-claw-wp') . '</p>';
             },
-            self::PAGE_SLUG
+            self::PAGE_SLUG . '_search'
         );
 
         // Agent Section.
         add_settings_section(
             'wpoc_agent',
-            __('Agent Settings', 'wp-open-claw'),
+            __('Agent Settings', 'open-claw-wp'),
             function () {
-                echo '<p>' . esc_html__('Configure agent behavior.', 'wp-open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure agent behavior.', 'open-claw-wp') . '</p>';
             },
-            self::PAGE_SLUG
+            self::PAGE_SLUG . '_agent'
+        );
+
+        // Telegram Section.
+        add_settings_section(
+            'wpoc_telegram',
+            __('Telegram Integration', 'open-claw-wp'),
+            function () {
+                echo '<p>' . esc_html__('Control Open Claw via Telegram Bot.', 'open-claw-wp') . '</p>';
+            },
+            self::PAGE_SLUG . '_telegram'
         );
 
         $this->add_fields();
@@ -141,7 +167,7 @@ class Settings {
 
     private function add_fields(): void {
         // LLM Provider.
-        add_settings_field('llm_provider', __('AI Provider', 'wp-open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('llm_provider', __('AI Provider', 'open-claw-wp'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'llm_provider',
             'options'   => [
                 'openai'    => 'OpenAI',
@@ -151,14 +177,14 @@ class Settings {
         ]);
 
         // OpenAI API Key.
-        add_settings_field('openai_api_key', __('OpenAI API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('openai_api_key', __('OpenAI API Key', 'open-claw-wp'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'openai_api_key',
-            'description' => __('Get your key at platform.openai.com', 'wp-open-claw'),
+            'description' => __('Get your key at platform.openai.com', 'open-claw-wp'),
             'data-provider' => 'openai',
         ]);
 
         // OpenAI Model.
-        add_settings_field('openai_model', __('OpenAI Model', 'wp-open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('openai_model', __('OpenAI Model', 'open-claw-wp'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'openai_model',
             'options'   => [
                 'gpt-4o'         => 'GPT-4o',
@@ -169,14 +195,14 @@ class Settings {
         ]);
 
         // Anthropic API Key.
-        add_settings_field('anthropic_api_key', __('Anthropic API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('anthropic_api_key', __('Anthropic API Key', 'open-claw-wp'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'anthropic_api_key',
-            'description' => __('Get your key at console.anthropic.com', 'wp-open-claw'),
+            'description' => __('Get your key at console.anthropic.com', 'open-claw-wp'),
             'data-provider' => 'anthropic',
         ]);
 
         // Anthropic Model.
-        add_settings_field('anthropic_model', __('Anthropic Model', 'wp-open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('anthropic_model', __('Anthropic Model', 'open-claw-wp'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'anthropic_model',
             'options'   => [
                 'claude-sonnet-4-20250514' => 'Claude Sonnet 4',
@@ -186,14 +212,14 @@ class Settings {
         ]);
 
         // Google Gemini API Key.
-        add_settings_field('gemini_api_key', __('Google AI Studio API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('gemini_api_key', __('Google AI Studio API Key', 'open-claw-wp'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key',
-            'description' => __('Get your free key at aistudio.google.com', 'wp-open-claw'),
+            'description' => __('Get your free key at aistudio.google.com', 'open-claw-wp'),
             'data-provider' => 'gemini',
         ]);
 
         // Google Gemini Model.
-        add_settings_field('gemini_model', __('Gemini Model', 'wp-open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG, 'wpoc_llm', [
+        add_settings_field('gemini_model', __('Gemini Model', 'open-claw-wp'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_model',
             'options'   => [
                 'gemini-2.5-flash'                => 'Gemini 2.5 Flash (Free)',
@@ -205,54 +231,89 @@ class Settings {
         ]);
 
         // Google CSE API Key.
-        add_settings_field('google_cse_api_key', __('Google API Key', 'wp-open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG, 'wpoc_search', [
+        add_settings_field('google_cse_api_key', __('Google API Key', 'open-claw-wp'), [$this, 'render_password_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
             'label_for' => 'google_cse_api_key',
-            'description' => __('Google Cloud API key with Custom Search API enabled.', 'wp-open-claw'),
+            'description' => __('Google Cloud API key with Custom Search API enabled.', 'open-claw-wp'),
         ]);
 
         // Google CSE CX.
-        add_settings_field('google_cse_cx', __('Search Engine ID (CX)', 'wp-open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG, 'wpoc_search', [
+        add_settings_field('google_cse_cx', __('Search Engine ID (CX)', 'open-claw-wp'), [$this, 'render_text_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
             'label_for' => 'google_cse_cx',
-            'description' => __('Your Custom Search Engine ID from cse.google.com', 'wp-open-claw'),
+            'description' => __('Your Custom Search Engine ID from cse.google.com', 'open-claw-wp'),
         ]);
 
         // Max Iterations.
-        add_settings_field('max_iterations', __('Max Agent Iterations', 'wp-open-claw'), [$this, 'render_number_field'], self::PAGE_SLUG, 'wpoc_agent', [
+        add_settings_field('max_iterations', __('Max Agent Iterations', 'open-claw-wp'), [$this, 'render_number_field'], self::PAGE_SLUG . '_agent', 'wpoc_agent', [
             'label_for'   => 'max_iterations',
             'min'         => 1,
             'max'         => 20,
-            'description' => __('Maximum number of ReAct loop iterations (1-20).', 'wp-open-claw'),
+            'description' => __('Maximum number of ReAct loop iterations (1-20).', 'open-claw-wp'),
         ]);
+
+        // Telegram Enabled.
+        add_settings_field('telegram_enabled', __('Enable Telegram', 'open-claw-wp'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+            'label_for'   => 'telegram_enabled',
+            'description' => __('Enable Telegram Bot integration.', 'open-claw-wp'),
+        ]);
+
+        // Telegram Bot Token.
+        add_settings_field('telegram_bot_token', __('Bot Token', 'open-claw-wp'), [$this, 'render_password_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+            'label_for'   => 'telegram_bot_token',
+            'description' => __('Get from @BotFather on Telegram.', 'open-claw-wp'),
+        ]);
+
+        // Telegram Allowed Chat IDs.
+        add_settings_field('telegram_allowed_chat_ids', __('Allowed Chat IDs', 'open-claw-wp'), [$this, 'render_text_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+            'label_for'   => 'telegram_allowed_chat_ids',
+            'description' => __('Comma-separated Telegram chat IDs allowed to use the bot.', 'open-claw-wp'),
+        ]);
+
+        // Webhook Setup Button.
+        add_settings_field('telegram_webhook', __('Webhook', 'open-claw-wp'), [$this, 'render_telegram_webhook_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram');
     }
 
     private function get_defaults(): array {
         return [
-            'llm_provider'       => 'openai',
-            'openai_api_key'     => '',
-            'openai_model'       => 'gpt-4o',
-            'anthropic_api_key'  => '',
-            'anthropic_model'    => 'claude-sonnet-4-20250514',
-            'gemini_api_key'     => '',
-            'gemini_model'       => 'gemini-2.5-flash',
-            'google_cse_api_key' => '',
-            'google_cse_cx'      => '',
-            'max_iterations'     => 10,
+            'llm_provider'              => 'gemini',
+            'openai_api_key'            => '',
+            'openai_model'              => 'gpt-4o',
+            'anthropic_api_key'         => '',
+            'anthropic_model'           => 'claude-sonnet-4-20250514',
+            'gemini_api_key'            => '',
+            'gemini_model'              => 'gemini-2.5-flash',
+            'google_cse_api_key'        => '',
+            'google_cse_cx'             => '',
+            'max_iterations'            => 10,
+            'telegram_enabled'          => false,
+            'telegram_bot_token'        => '',
+            'telegram_secret_token'     => '',
+            'telegram_allowed_chat_ids' => '',
         ];
     }
 
     public function sanitize_settings(array $input): array {
         $sanitized = [
-            'llm_provider'       => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['llm_provider'] : 'openai',
-            'openai_api_key'     => sanitize_text_field($input['openai_api_key'] ?? ''),
-            'openai_model'       => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
-            'anthropic_api_key'  => sanitize_text_field($input['anthropic_api_key'] ?? ''),
-            'anthropic_model'    => sanitize_text_field($input['anthropic_model'] ?? 'claude-sonnet-4-20250514'),
-            'gemini_api_key'     => sanitize_text_field($input['gemini_api_key'] ?? ''),
-            'gemini_model'       => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.0-flash'),
-            'google_cse_api_key' => sanitize_text_field($input['google_cse_api_key'] ?? ''),
-            'google_cse_cx'      => sanitize_text_field($input['google_cse_cx'] ?? ''),
-            'max_iterations'     => max(1, min(20, absint($input['max_iterations'] ?? 10))),
+            'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['llm_provider'] : 'openai',
+            'openai_api_key'            => sanitize_text_field($input['openai_api_key'] ?? ''),
+            'openai_model'              => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
+            'anthropic_api_key'         => sanitize_text_field($input['anthropic_api_key'] ?? ''),
+            'anthropic_model'           => sanitize_text_field($input['anthropic_model'] ?? 'claude-sonnet-4-20250514'),
+            'gemini_api_key'            => sanitize_text_field($input['gemini_api_key'] ?? ''),
+            'gemini_model'              => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.0-flash'),
+            'google_cse_api_key'        => sanitize_text_field($input['google_cse_api_key'] ?? ''),
+            'google_cse_cx'             => sanitize_text_field($input['google_cse_cx'] ?? ''),
+            'max_iterations'            => max(1, min(20, absint($input['max_iterations'] ?? 10))),
+            'telegram_enabled'          => ! empty($input['telegram_enabled']),
+            'telegram_bot_token'        => sanitize_text_field($input['telegram_bot_token'] ?? ''),
+            'telegram_secret_token'     => sanitize_text_field($input['telegram_secret_token'] ?? ''),
+            'telegram_allowed_chat_ids' => sanitize_text_field($input['telegram_allowed_chat_ids'] ?? ''),
         ];
+
+        // Preserve existing secret token if not changed.
+        if (empty($sanitized['telegram_secret_token'])) {
+            $existing = get_option(self::OPTION_NAME, []);
+            $sanitized['telegram_secret_token'] = $existing['telegram_secret_token'] ?? '';
+        }
 
         // Encrypt API keys before storing.
         foreach (self::$encrypted_fields as $field) {
@@ -268,25 +329,64 @@ class Settings {
         if (! current_user_can('manage_options')) {
             return;
         }
+
+        $tabs = [
+            'llm'      => __('AI Provider', 'open-claw-wp'),
+            'search'   => __('Web Research', 'open-claw-wp'),
+            'agent'    => __('Agent', 'open-claw-wp'),
+            'telegram' => __('Telegram', 'open-claw-wp'),
+        ];
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?> ⚡</h1>
-            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G anywhere in admin to open the Command Palette.', 'wp-open-claw'); ?></p>
+            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G anywhere in admin to open the Command Palette.', 'open-claw-wp'); ?></p>
+
+            <nav class="nav-tab-wrapper wpoc-tabs">
+                <?php foreach ($tabs as $key => $label) : ?>
+                    <a href="#" class="nav-tab<?php echo $key === 'llm' ? ' nav-tab-active' : ''; ?>"
+                       data-tab="wpoc-tab-<?php echo esc_attr($key); ?>">
+                        <?php echo esc_html($label); ?>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
 
             <form action="options.php" method="post">
-                <?php
-                settings_fields(self::OPTION_GROUP);
-                do_settings_sections(self::PAGE_SLUG);
-                submit_button(__('Save Settings', 'wp-open-claw'));
-                ?>
+                <?php settings_fields(self::OPTION_GROUP); ?>
+
+                <?php foreach ($tabs as $key => $label) : ?>
+                    <div class="wpoc-tab-content" id="wpoc-tab-<?php echo esc_attr($key); ?>"
+                         style="<?php echo $key !== 'llm' ? 'display:none;' : ''; ?>">
+                        <?php do_settings_sections(self::PAGE_SLUG . '_' . $key); ?>
+                    </div>
+                <?php endforeach; ?>
+
+                <?php submit_button(__('Save Settings', 'open-claw-wp')); ?>
             </form>
         </div>
+
+        <style>
+            .wpoc-tabs { margin-bottom: 0; }
+            .wpoc-tab-content { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 20px 10px; }
+            .wpoc-tab-content .form-table { margin-top: 0; }
+        </style>
+
         <script>
         (function() {
+            // Tab switching.
+            document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(tab) {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(t) { t.classList.remove('nav-tab-active'); });
+                    document.querySelectorAll('.wpoc-tab-content').forEach(function(c) { c.style.display = 'none'; });
+                    this.classList.add('nav-tab-active');
+                    document.getElementById(this.getAttribute('data-tab')).style.display = '';
+                });
+            });
+
+            // Provider field toggle (LLM tab).
             var providerSelect = document.getElementById('llm_provider');
             if (!providerSelect) return;
 
-            // Mark parent <tr> rows with data-provider from child elements' CSS classes.
             var providers = ['openai', 'anthropic', 'gemini'];
             providers.forEach(function(p) {
                 document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
@@ -372,5 +472,63 @@ class Settings {
         <?php if (! empty($args['description'])) : ?>
             <p class="description"><?php echo esc_html($args['description']); ?></p>
         <?php endif;
+    }
+    public function render_checkbox_field(array $args): void {
+        $options = get_option(self::OPTION_NAME, $this->get_defaults());
+        $value   = ! empty($options[$args['label_for']]);
+        ?>
+        <label>
+            <input type="checkbox"
+                   id="<?php echo esc_attr($args['label_for']); ?>"
+                   name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
+                   value="1"
+                   <?php checked($value); ?> />
+            <?php if (! empty($args['description'])) : ?>
+                <?php echo esc_html($args['description']); ?>
+            <?php endif; ?>
+        </label>
+        <?php
+    }
+
+    public function render_telegram_webhook_field(): void {
+        ?>
+        <button type="button" id="wpoc-telegram-register" class="button button-primary">
+            <?php esc_html_e('Register Webhook', 'open-claw-wp'); ?>
+        </button>
+        <button type="button" id="wpoc-telegram-remove" class="button">
+            <?php esc_html_e('Remove Webhook', 'open-claw-wp'); ?>
+        </button>
+        <span id="wpoc-telegram-status" style="margin-left: 10px;"></span>
+        <p class="description"><?php esc_html_e('Save settings first, then register the webhook.', 'open-claw-wp'); ?></p>
+        <script>
+        (function() {
+            function telegramSetup(action) {
+                var status = document.getElementById('wpoc-telegram-status');
+                status.textContent = 'Processing...';
+                fetch(wpApiSettings.root + 'open-claw/v1/telegram/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': wpApiSettings.nonce
+                    },
+                    body: JSON.stringify({ action: action })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
+                    status.style.color = data.success ? 'green' : 'red';
+                })
+                .catch(function() {
+                    status.textContent = 'Request failed.';
+                    status.style.color = 'red';
+                });
+            }
+            var regBtn = document.getElementById('wpoc-telegram-register');
+            var rmBtn  = document.getElementById('wpoc-telegram-remove');
+            if (regBtn) regBtn.addEventListener('click', function() { telegramSetup('register'); });
+            if (rmBtn)  rmBtn.addEventListener('click', function() { telegramSetup('remove'); });
+        })();
+        </script>
+        <?php
     }
 }

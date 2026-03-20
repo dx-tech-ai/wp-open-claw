@@ -7,11 +7,12 @@ namespace OpenClaw\Actions;
 defined('ABSPATH') || exit;
 
 use OpenClaw\Tools\ToolInterface;
+use OpenClaw\Tools\DynamicConfirmInterface;
 
 /**
  * Media manager — upload images from URL, manage featured images.
  */
-class MediaTool implements ToolInterface {
+class MediaTool implements ToolInterface, DynamicConfirmInterface {
 
     /**
      * Validate URL is safe (not pointing to internal/private networks).
@@ -93,6 +94,11 @@ class MediaTool implements ToolInterface {
 
     public function requiresConfirmation(): bool {
         return true;
+    }
+
+    public function requiresConfirmationFor(array $params): bool {
+        $action = $params['action'] ?? '';
+        return in_array($action, ['upload_from_url', 'set_featured_image', 'delete_media'], true);
     }
 
     public function execute(array $params): array {

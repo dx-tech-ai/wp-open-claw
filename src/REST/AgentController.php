@@ -81,7 +81,7 @@ class AgentController {
         if (! current_user_can('manage_options')) {
             return new WP_Error(
                 'rest_forbidden',
-                esc_html__('You do not have permission to use Open Claw.', 'wp-open-claw'),
+                esc_html__('You do not have permission to use Open Claw.', 'open-claw-wp'),
                 ['status' => 403]
             );
         }
@@ -94,7 +94,7 @@ class AgentController {
         if ($count >= self::RATE_LIMIT) {
             return new WP_Error(
                 'rest_rate_limit',
-                esc_html__('Rate limit exceeded. Please wait before sending more requests.', 'wp-open-claw'),
+                esc_html__('Rate limit exceeded. Please wait before sending more requests.', 'open-claw-wp'),
                 ['status' => 429]
             );
         }
