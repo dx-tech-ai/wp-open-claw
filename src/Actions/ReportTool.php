@@ -243,8 +243,8 @@ class ReportTool implements ToolInterface {
         $low_stock = wc_get_products([
             'limit'        => $limit,
             'stock_status' => 'instock',
-            'meta_key'     => '_stock',
-            'meta_value'   => 5,
+            'meta_key'     => '_stock', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- WooCommerce stock query.
+            'meta_value'   => 5, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Required for stock threshold filtering.
             'meta_compare' => '<=',
             'meta_type'    => 'NUMERIC',
             'orderby'      => 'meta_value_num',

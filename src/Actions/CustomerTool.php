@@ -102,9 +102,9 @@ class CustomerTool implements ToolInterface {
 
         // For WC meta ordering.
         if ($orderby === 'order_count') {
-            $args['meta_key'] = '_order_count';
+            $args['meta_key'] = '_order_count'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- WooCommerce standard meta ordering.
         } elseif ($orderby === 'total_spent') {
-            $args['meta_key'] = '_money_spent';
+            $args['meta_key'] = '_money_spent'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- WooCommerce standard meta ordering.
         }
 
         $users = get_users($args);
@@ -259,8 +259,8 @@ class CustomerTool implements ToolInterface {
         // Get customers with orders.
         $with_orders = count(get_users([
             'role'        => 'customer',
-            'meta_key'    => '_order_count',
-            'meta_value'  => 0,
+            'meta_key'    => '_order_count', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- WooCommerce standard meta query.
+            'meta_value'  => 0, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Required for filtering customers with orders.
             'meta_compare'=> '>',
             'fields'      => 'ID',
         ]));
@@ -269,7 +269,7 @@ class CustomerTool implements ToolInterface {
         $top_customers = get_users([
             'role'     => 'customer',
             'number'   => 5,
-            'meta_key' => '_money_spent',
+            'meta_key' => '_money_spent', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- WooCommerce standard meta ordering.
             'orderby'  => 'meta_value_num',
             'order'    => 'DESC',
         ]);
