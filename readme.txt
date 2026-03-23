@@ -1,6 +1,6 @@
-=== Open Claw WP ===
+=== Open Claw ===
 Contributors: dxtechai
-Tags: ai, agent, automation, woocommerce, chatbot, telegram
+Tags: ai, agent, automation, woocommerce, chatbot
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4

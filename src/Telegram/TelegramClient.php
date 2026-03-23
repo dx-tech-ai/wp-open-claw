@@ -189,6 +189,7 @@ class TelegramClient {
         ]);
 
         if (is_wp_error($response)) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for API errors.
             error_log('[OpenClaw Telegram] API error: ' . $response->get_error_message());
             return false;
         }
@@ -197,6 +198,7 @@ class TelegramClient {
         $data   = json_decode(wp_remote_retrieve_body($response), true);
 
         if ($status !== 200 || empty($data['ok'])) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging for API failures.
             error_log('[OpenClaw Telegram] API failed: ' . wp_json_encode($data));
             return false;
         }

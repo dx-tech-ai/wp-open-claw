@@ -199,8 +199,8 @@ class ResearchTool implements ToolInterface {
                     $href = urldecode($urlMatch[1]);
                 }
 
-                $title   = strip_tags($match[2]);
-                $snippet = isset($snippets[$i]) ? strip_tags($snippets[$i][1]) : '';
+                $title   = wp_strip_all_tags($match[2]);
+                $snippet = isset($snippets[$i]) ? wp_strip_all_tags($snippets[$i][1]) : '';
 
                 if (! empty($title) && ! empty($href)) {
                     $results[] = [

@@ -21,7 +21,7 @@ class Activator {
         if (version_compare(PHP_VERSION, '7.4', '<')) {
             deactivate_plugins(WPOC_BASENAME);
             wp_die(
-                esc_html__('WP Open Claw requires PHP 7.4 or higher.', 'open-claw-wp'),
+                esc_html__('WP Open Claw requires PHP 7.4 or higher.', 'open-claw'),
                 'Plugin Activation Error',
                 ['back_link' => true]
             );
@@ -31,7 +31,7 @@ class Activator {
         if (version_compare($wp_version, '6.4', '<')) {
             deactivate_plugins(WPOC_BASENAME);
             wp_die(
-                esc_html__('WP Open Claw requires WordPress 6.4 or higher.', 'open-claw-wp'),
+                esc_html__('WP Open Claw requires WordPress 6.4 or higher.', 'open-claw'),
                 'Plugin Activation Error',
                 ['back_link' => true]
             );

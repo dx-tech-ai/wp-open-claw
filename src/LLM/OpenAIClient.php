@@ -80,115 +80,37 @@ class OpenAIClient implements ClientInterface {
      * @inheritDoc
      */
     public function stream(array $messages, array $tools = []): Generator {
-        $body = [
-            'model'    => $this->model,
-            'messages' => $messages,
-            'stream'   => true,
-        ];
+        // Use non-streaming via wp_remote_post (wp_remote_post doesn't support SSE).
+        $result = $this->chat($messages, $tools);
 
-        if (! empty($tools)) {
-            $body['tools']       = $tools;
-            $body['tool_choice'] = 'auto';
-        }
-
-        // Use cURL directly for streaming (wp_remote_post doesn't support SSE).
-        $ch = curl_init(self::API_URL);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->apiKey,
-            ],
-            CURLOPT_POSTFIELDS     => wp_json_encode($body),
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_TIMEOUT        => 120,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
-
-        $tool_calls    = [];
-        $content       = '';
-        $finish_reason = null;
-
-        // Collect full response, then parse.
-        $fullResponse = '';
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$fullResponse) {
-            $fullResponse .= $chunk;
-            return strlen($chunk);
-        });
-
-        curl_exec($ch);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        if ($curlError) {
+        if (isset($result['error'])) {
             yield [
                 'type'    => 'error',
-                'content' => "cURL error: {$curlError}",
+                'content' => $result['message'],
             ];
             return;
         }
 
-        // Parse SSE lines.
-        $lines = explode("\n", $fullResponse);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || $line === 'data: [DONE]') {
-                continue;
-            }
-            if (substr($line, 0, 6) === 'data: ') {
-                $json = json_decode(substr($line, 6), true);
-                if (! $json) {
-                    continue;
-                }
-
-                $delta = $json['choices'][0]['delta'] ?? [];
-                $finish_reason = $json['choices'][0]['finish_reason'] ?? $finish_reason;
-
-                // Content delta.
-                if (isset($delta['content'])) {
-                    $content .= $delta['content'];
-                    yield [
-                        'type'    => 'content',
-                        'content' => $delta['content'],
-                    ];
-                }
-
-                // Tool call deltas.
-                if (isset($delta['tool_calls'])) {
-                    foreach ($delta['tool_calls'] as $tc) {
-                        $idx = $tc['index'];
-                        if (! isset($tool_calls[$idx])) {
-                            $tool_calls[$idx] = [
-                                'id'       => $tc['id'] ?? '',
-                                'name'     => $tc['function']['name'] ?? '',
-                                'arguments'=> '',
-                            ];
-                        }
-                        if (isset($tc['function']['arguments'])) {
-                            $tool_calls[$idx]['arguments'] .= $tc['function']['arguments'];
-                        }
-                    }
-                }
-            }
+        if ($result['content']) {
+            yield [
+                'type'    => 'content',
+                'content' => $result['content'],
+            ];
         }
 
-        // Yield complete tool calls at the end.
-        if (! empty($tool_calls)) {
-            foreach ($tool_calls as $tc) {
-                yield [
-                    'type'      => 'tool_call',
-                    'id'        => $tc['id'],
-                    'name'      => $tc['name'],
-                    'arguments' => json_decode($tc['arguments'], true) ?? [],
-                ];
-            }
+        foreach ($result['tool_calls'] as $tc) {
+            yield [
+                'type'      => 'tool_call',
+                'id'        => $tc['id'],
+                'name'      => $tc['name'],
+                'arguments' => $tc['arguments'],
+            ];
         }
 
         yield [
             'type'          => 'done',
-            'finish_reason' => $finish_reason,
-            'full_content'  => $content,
+            'finish_reason' => $result['finish_reason'],
+            'full_content'  => $result['content'] ?? '',
         ];
     }
 

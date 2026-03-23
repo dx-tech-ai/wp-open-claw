@@ -55,7 +55,7 @@ class Dashboard {
             return;
         }
         ?>
-        <div id="wpoc-command-palette" class="wpoc-overlay" style="display:none;" role="dialog" aria-label="<?php esc_attr_e('Open Claw Command Palette', 'open-claw-wp'); ?>">
+        <div id="wpoc-command-palette" class="wpoc-overlay" style="display:none;" role="dialog" aria-label="<?php esc_attr_e('Open Claw Command Palette', 'open-claw'); ?>">
             <div class="wpoc-backdrop"></div>
             <div class="wpoc-palette">
                 <div class="wpoc-header">
@@ -69,7 +69,7 @@ class Dashboard {
                     <textarea id="wpoc-input"
                               class="wpoc-search-input"
                               rows="1"
-                              placeholder="<?php esc_attr_e('Ask me to do something... (e.g. "Create a post about Da Nang")', 'open-claw-wp'); ?>"
+                              placeholder="<?php esc_attr_e('Ask me to do something... (e.g. "Create a post about Da Nang")', 'open-claw'); ?>"
                               autocomplete="off"></textarea>
                     <button id="wpoc-send" class="wpoc-send-btn" aria-label="Send">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -81,7 +81,7 @@ class Dashboard {
                 <div id="wpoc-actions" class="wpoc-actions-container"></div>
                 <div class="wpoc-footer">
                     <span class="wpoc-shortcut">Ctrl+G</span>
-                    <span class="wpoc-status" id="wpoc-status"><?php esc_html_e('Ready', 'open-claw-wp'); ?></span>
+                    <span class="wpoc-status" id="wpoc-status"><?php esc_html_e('Ready', 'open-claw'); ?></span>
                 </div>
             </div>
         </div>

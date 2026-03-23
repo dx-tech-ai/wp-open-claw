@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Open Claw WP
+ * Plugin Name:       Open Claw
  * Plugin URI:        https://github.com/dx-tech-ai/wp-open-claw
  * Description:       AI Agent tự trị cho WordPress — thực thi hành động thật qua vòng lặp ReAct với Command Palette UI.
  * Version:           1.0.0
@@ -10,7 +10,7 @@
  * Author URI:        https://github.com/dx-tech-ai
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       open-claw-wp
+ * Text Domain:       open-claw
  *
  * @package OpenClaw
  */
@@ -52,8 +52,6 @@ register_deactivation_hook(__FILE__, 'wpoc_deactivate');
  * Initialize the plugin on plugins_loaded.
  */
 function wpoc_init(): void {
-    // Load text domain.
-    load_plugin_textdomain('open-claw-wp', false, dirname(WPOC_BASENAME) . '/languages');
 
     // Boot Admin Settings & Dashboard.
     if (is_admin()) {
