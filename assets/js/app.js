@@ -64,7 +64,7 @@
         try {
             // Restore session ID.
             const savedSessionId = localStorage.getItem(KEY_SESSION_ID);
-            if (savedSessionId) {
+            if (savedSessionId && savedSessionId !== 'null') {
                 sessionId = savedSessionId;
             }
 
@@ -350,7 +350,9 @@
             formData.append('action', 'wpoc_stream_chat');
             formData.append('_nonce', wpocData.streamNonce);
             formData.append('message', message);
-            formData.append('session_id', sessionId);
+            if (sessionId && sessionId !== 'null') {
+                formData.append('session_id', sessionId);
+            }
 
             const res = await fetch(wpocData.streamUrl, {
                 method: 'POST',

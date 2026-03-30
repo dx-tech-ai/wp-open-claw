@@ -55,7 +55,7 @@ class StreamHandler {
             wp_send_json_error('Message is required', 400);
         }
 
-        if (empty($session_id)) {
+        if (empty($session_id) || $session_id === 'null') {
             $session_id = wp_generate_uuid4();
         }
 

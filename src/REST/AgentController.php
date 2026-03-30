@@ -124,7 +124,10 @@ class AgentController {
      */
     public function handle_chat(WP_REST_Request $request): WP_REST_Response {
         $message    = $request->get_param('message');
-        $session_id = $request->get_param('session_id') ?: wp_generate_uuid4();
+        $session_id = $request->get_param('session_id');
+        if (empty($session_id) || $session_id === 'null') {
+            $session_id = wp_generate_uuid4();
+        }
 
         if (! $this->validate_session_id($session_id)) {
             return new WP_REST_Response([
