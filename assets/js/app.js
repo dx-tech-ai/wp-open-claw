@@ -218,7 +218,7 @@
                 <span class="wpoc-log-icon">❌</span>
                 <div class="wpoc-log-content">
                     ${escapeHtml(msg)}
-                    ${needsSettings ? '<br><a href="' + wpocData.adminUrl + 'admin.php?page=open-claw-settings" class="wpoc-settings-link">⚙️ Mở Cài đặt</a>' : ''}
+                    ${needsSettings ? '<br><a href="admin.php?page=wpoc-settings" class="wpoc-settings-link">⚙️ Mở Cài đặt</a>' : ''}
                 </div>
             `;
             log.appendChild(entry);
@@ -345,33 +345,58 @@
         addLogEntry('response', `You: ${message}`);
 
         try {
-            const res = await fetch(wpocData.restUrl + 'agent/chat', {
+            // Use admin-ajax.php for SSE streaming.
+            const formData = new FormData();
+            formData.append('action', 'wpoc_stream_chat');
+            formData.append('_nonce', wpocData.streamNonce);
+            formData.append('message', message);
+            formData.append('session_id', sessionId);
+
+            const res = await fetch(wpocData.streamUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce':   wpocData.nonce,
-                },
-                body: JSON.stringify({
-                    message:    message,
-                    session_id: sessionId,
-                }),
+                body: formData,
             });
 
-            const data = await res.json();
+            const contentType = res.headers.get('content-type') || '';
 
-            if (!data.success) {
-                addLogEntry('error', data.message || 'Request failed.');
-                return;
-            }
+            if (contentType.includes('text/event-stream')) {
+                // Read SSE stream.
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-            sessionId = data.session_id;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            // Process steps.
-            for (const step of data.steps || []) {
-                if (step.type === 'confirmation') {
-                    renderActionCard(step.content);
-                } else {
-                    addLogEntry(step.type, step.content);
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+                        try {
+                            const step = JSON.parse(trimmed.substring(6));
+                            processStreamStep(step);
+                        } catch (e) {}
+                    }
+                }
+
+                // Process remaining buffer.
+                if (buffer.trim().startsWith('data: ')) {
+                    try {
+                        const step = JSON.parse(buffer.trim().substring(6));
+                        processStreamStep(step);
+                    } catch (e) {}
+                }
+            } else {
+                // JSON fallback (WordPress error or non-SSE response).
+                const data = await res.json();
+                if (data.success === false) {
+                    addLogEntry('error', data.data || 'Request failed.');
                 }
             }
 
@@ -382,6 +407,34 @@
             setStatus('Ready', false);
             sendBtn() && (sendBtn().disabled = false);
             saveState();
+        }
+    }
+
+    function processStreamStep(step) {
+        if (step.type === 'session') {
+            sessionId = step.session_id;
+            return;
+        }
+        if (step.type === 'done') {
+            sessionId = step.session_id || sessionId;
+            return;
+        }
+
+        // Update status bar with current step.
+        const statusMap = {
+            thinking:     '🧠 Thinking...',
+            tool_call:    '🔧 Calling tool...',
+            observation:  '👁️ Observing...',
+            response:     '✅ Done',
+            confirmation: '⏳ Waiting for approval...',
+            error:        '❌ Error',
+        };
+        setStatus(statusMap[step.type] || 'Processing...', step.type !== 'response' && step.type !== 'error');
+
+        if (step.type === 'confirmation') {
+            renderActionCard(step.content);
+        } else {
+            addLogEntry(step.type, step.content);
         }
     }
 

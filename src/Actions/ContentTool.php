@@ -29,7 +29,7 @@ class ContentTool implements ToolInterface {
     }
 
     public function getDescription(): string {
-        return 'Tạo hoặc cập nhật bài viết trên WordPress. Khi tạo mới (create), BẮT BUỘC phải cung cấp đầy đủ: post_title, post_content (tối thiểu 1000 ký tự nội dung thuần, viết bằng Markdown — sẽ tự động chuyển sang HTML), seo_keyword (từ khóa SEO chính), và thumbnail_url (URL ảnh đại diện). Nếu thiếu bất kỳ thông tin nào, hãy tự tìm kiếm hoặc tạo nội dung phù hợp trước khi gọi tool này.';
+        return 'Tạo hoặc cập nhật bài viết trên WordPress. Khi tạo mới (create), BẮT BUỘC phải cung cấp: post_title, post_content (tối thiểu 1000 ký tự nội dung thuần, viết bằng Markdown — sẽ tự động chuyển sang HTML), và seo_keyword (từ khóa SEO chính). Thumbnail sẽ được TỰ ĐỘNG tạo bằng AI hoặc lấy từ stock photo, KHÔNG CẦN cung cấp thumbnail_url trừ khi có URL cụ thể. Nếu thiếu thông tin bắt buộc, hãy tự tìm kiếm hoặc tạo nội dung phù hợp trước khi gọi tool này.';
     }
 
     public function getSchema(): array {
@@ -82,7 +82,7 @@ class ContentTool implements ToolInterface {
                 ],
                 'thumbnail_url' => [
                     'type'        => 'string',
-                    'description' => 'URL ảnh đại diện (thumbnail/featured image). BẮT BUỘC khi tạo mới. Ảnh sẽ được tự động upload vào Media Library.',
+                    'description' => 'URL ảnh đại diện (thumbnail/featured image). TÙY CHỌN — nếu không cung cấp, hệ thống sẽ tự động tạo ảnh bằng AI hoặc tìm từ stock photo.',
                 ],
             ],
             'required' => ['action', 'post_title', 'post_content'],
@@ -140,11 +140,6 @@ class ContentTool implements ToolInterface {
             return ['success' => false, 'data' => null, 'message' => 'seo_keyword (từ khóa SEO) là bắt buộc khi tạo bài viết. Hãy cung cấp từ khóa SEO chính cho bài viết.'];
         }
 
-        $thumbnail_url = esc_url_raw($params['thumbnail_url'] ?? '');
-        if (empty($thumbnail_url)) {
-            return ['success' => false, 'data' => null, 'message' => 'thumbnail_url (URL ảnh đại diện) là bắt buộc khi tạo bài viết. Hãy tìm hoặc cung cấp URL ảnh phù hợp với nội dung.'];
-        }
-
         // --- Create the post ---
 
         $post_data = [
@@ -173,9 +168,19 @@ class ContentTool implements ToolInterface {
             ];
         }
 
-        // --- Upload thumbnail and set as featured image ---
+        // --- Handle thumbnail ---
 
-        $thumb_result = $this->uploadAndSetThumbnail($post_id, $thumbnail_url);
+        $thumbnail_url = esc_url_raw($params['thumbnail_url'] ?? '');
+        $thumb_result  = ['success' => false, 'message' => ''];
+
+        if (! empty($thumbnail_url)) {
+            // Agent provided a specific URL — use it directly.
+            $thumb_result = $this->uploadAndSetThumbnail($post_id, $thumbnail_url);
+        } else {
+            // Auto-generate or fetch from stock photo via ImageService.
+            $image_service = new \OpenClaw\Services\ImageService();
+            $thumb_result  = $image_service->getThumbnail($raw_content, $title, $seo_keyword, $post_id);
+        }
 
         // --- Save SEO meta fields (Yoast SEO) ---
 
@@ -191,9 +196,11 @@ class ContentTool implements ToolInterface {
             'seo_keyword'    => $seo_keyword,
         ];
 
-        if ($thumb_result['success']) {
-            $response_data['thumbnail_id']  = $thumb_result['attachment_id'];
-            $response_data['thumbnail_url'] = $thumb_result['url'];
+        if (! empty($thumb_result['attachment_id'])) {
+            $response_data['thumbnail_id'] = $thumb_result['attachment_id'];
+            if (! empty($thumb_result['source'])) {
+                $response_data['thumbnail_source'] = $thumb_result['source'];
+            }
         }
 
         $message = sprintf(
@@ -205,8 +212,10 @@ class ContentTool implements ToolInterface {
             $seo_keyword
         );
 
-        if (! $thumb_result['success']) {
-            $message .= sprintf('. ⚠️ Lỗi upload thumbnail: %s', $thumb_result['message']);
+        if ($thumb_result['success']) {
+            $message .= sprintf('. 🖼️ Thumbnail: %s', $thumb_result['message'] ?? $thumb_result['source'] ?? 'ok');
+        } elseif (! empty($thumb_result['message'])) {
+            $message .= sprintf('. ⚠️ Thumbnail: %s', $thumb_result['message']);
         }
 
         return [
