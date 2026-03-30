@@ -153,46 +153,61 @@ class TelegramController {
         // Set current user to admin for Kernel context.
         wp_set_current_user(1);
 
-        // Create Kernel and restore session.
-        $kernel     = new Kernel();
-        $session_id = $this->getOrCreateSessionId($chat_id);
-        $session    = get_transient($this->sessionKey($chat_id));
-
-        if ($session) {
-            $kernel->setMessages($session['messages'] ?? []);
-            $kernel->setPendingActions($session['pending_actions'] ?? []);
+        // Extend time limit for LLM calls.
+        if (function_exists('set_time_limit')) {
+            set_time_limit(120);
         }
 
-        // Send "typing" indicator.
         $client = new TelegramClient();
 
-        // Run the ReAct loop.
-        $steps = $kernel->handle($text);
+        try {
+            // Create Kernel and restore session.
+            $kernel     = new Kernel();
+            $session_id = $this->getOrCreateSessionId($chat_id);
+            $session    = get_transient($this->sessionKey($chat_id));
 
-        // Save session.
-        set_transient($this->sessionKey($chat_id), [
-            'messages'        => $kernel->getMessages(),
-            'pending_actions' => $kernel->getPendingActions(),
-            'session_id'      => $session_id,
-        ], HOUR_IN_SECONDS);
+            if ($session) {
+                $kernel->setMessages($session['messages'] ?? []);
+                $kernel->setPendingActions($session['pending_actions'] ?? []);
+            }
 
-        // Check for confirmation steps.
-        $confirmation = StepFormatter::findConfirmation($steps);
+            // Run the ReAct loop.
+            $steps = $kernel->handle($text);
 
-        // Send formatted text messages (non-confirmation steps).
-        $messages = StepFormatter::format($steps);
-        foreach ($messages as $msg) {
-            $client->sendMessage($chat_id, $msg);
-        }
+            // Save session.
+            set_transient($this->sessionKey($chat_id), [
+                'messages'        => $kernel->getMessages(),
+                'pending_actions' => $kernel->getPendingActions(),
+                'session_id'      => $session_id,
+            ], HOUR_IN_SECONDS);
 
-        // Send confirmation card if needed.
-        if ($confirmation) {
-            $cd = $confirmation['content'] ?? $confirmation;
-            $client->sendConfirmationCard(
+            // Check for confirmation steps.
+            $confirmation = StepFormatter::findConfirmation($steps);
+
+            // Send formatted text messages (non-confirmation steps).
+            $messages = StepFormatter::format($steps);
+            foreach ($messages as $msg) {
+                $client->sendMessage($chat_id, $msg);
+            }
+
+            // Send confirmation card if needed.
+            if ($confirmation) {
+                $cd = $confirmation['content'] ?? $confirmation;
+                $client->sendConfirmationCard(
+                    $chat_id,
+                    $cd['action_id'] ?? '',
+                    $cd['tool_name'] ?? 'unknown',
+                    $cd['params'] ?? []
+                );
+            }
+        } catch (\Throwable $e) {
+            // Log the error.
+            error_log('[OpenClaw Telegram] Handler error: ' . $e->getMessage());
+
+            // Notify user via Telegram.
+            $client->sendMessage(
                 $chat_id,
-                $cd['action_id'] ?? '',
-                $cd['tool_name'] ?? 'unknown',
-                $cd['params'] ?? []
+                "⚠️ Đã xảy ra lỗi khi xử lý yêu cầu:\n`" . $e->getMessage() . "`\n\nVui lòng thử lại hoặc dùng /reset để bắt đầu lại."
             );
         }
     }
