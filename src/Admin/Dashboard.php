@@ -83,7 +83,7 @@ class Dashboard {
                 <div id="wpoc-log" class="wpoc-log-container"></div>
                 <div id="wpoc-actions" class="wpoc-actions-container"></div>
                 <div class="wpoc-footer">
-                    <span class="wpoc-shortcut">Ctrl+G</span>
+                    <span class="wpoc-shortcut">Ctrl+I / Ctrl+G</span>
                     <span class="wpoc-status" id="wpoc-status"><?php esc_html_e('Ready', 'open-claw'); ?></span>
                 </div>
             </div>
