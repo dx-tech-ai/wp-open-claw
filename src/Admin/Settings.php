@@ -401,7 +401,7 @@ class Settings {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?> ⚡</h1>
-            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G anywhere in admin to open the Command Palette.', 'open-claw'); ?></p>
+            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G, Ctrl+I, or Ctrl+Shift+K anywhere in admin to open the Command Palette.', 'open-claw'); ?></p>
 
             <nav class="nav-tab-wrapper wpoc-tabs">
                 <?php foreach ($tabs as $key => $label) : ?>

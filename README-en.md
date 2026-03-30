@@ -14,7 +14,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 **Command Palette** | Open with `Ctrl+G`, modern glassmorphism-style chat interface |
+| 🤖 **Command Palette** | Open with `Ctrl+I`, `Ctrl+G` or `Ctrl+Shift+K`, modern glassmorphism-style chat interface |
 | 🧠 **ReAct Loop** | Agent reasons, selects tools, executes, observes results, and continues |
 | ✅ **Confirm Before Executing** | Data-modifying actions require user confirmation |
 | 🔗 **Chain Actions** | Automatically performs sequential chains of actions |
@@ -115,7 +115,7 @@ LLM Chat (OpenAI / Gemini / Anthropic)
 2. Go to WP Admin → Plugins → Add New → Upload Plugin
 3. Select the ZIP file → Install Now → Activate
 4. Go to **Open Claw** → configure your API key
-5. Press `Ctrl+G` to get started!
+5. Press `Ctrl+I` or `Ctrl+G` to get started!
 
 **Option 2: Clone from GitHub**
 ```bash
@@ -124,7 +124,7 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 # Activate plugin in WP Admin → Plugins
 # Go to Open Claw → configure API key
-# Press Ctrl+G to get started!
+# Press Ctrl+I or Ctrl+G to get started!
 ```
 
 ## ⚙️ Configuration
@@ -204,7 +204,7 @@ Yes! The agent supports Chain Actions — after confirming one action, the agent
 - Initial release
 - 11 built-in tools (8 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
-- Command Palette UI with `Ctrl+G` shortcut
+- Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
 - ReAct Loop engine with configurable max iterations
 - DuckDuckGo web search (free, no API key needed)
 - Dynamic Confirmation for mixed read/write tools

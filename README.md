@@ -14,7 +14,7 @@
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| 🤖 **Command Palette** | Mở bằng `Ctrl+G`, giao diện chat hiện đại phong cách glassmorphism |
+| 🤖 **Command Palette** | Mở bằng `Ctrl+I`, `Ctrl+G` hoặc `Ctrl+Shift+K`, giao diện chat hiện đại phong cách glassmorphism |
 | 🧠 **ReAct Loop** | Agent tự suy luận, chọn tool, thực thi, quan sát kết quả và tiếp tục |
 | ✅ **Xác nhận trước khi thực thi** | Hành động thay đổi dữ liệu cần xác nhận từ người dùng |
 | 🔗 **Chain Actions** | Tự động thực hiện chuỗi hành động liên tiếp |
@@ -122,7 +122,7 @@ LLM Chat (OpenAI / Gemini / Anthropic)
 2. Vào WP Admin → Plugins → Add New → Upload Plugin
 3. Chọn file ZIP vừa tải → Install Now → Activate
 4. Vào **Open Claw** → cấu hình API key
-5. Nhấn `Ctrl+G` để bắt đầu!
+5. Nhấn `Ctrl+I` hoặc `Ctrl+G` để bắt đầu!
 
 **Cách 2: Clone từ GitHub**
 ```bash
@@ -131,7 +131,7 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 # Kích hoạt plugin trong WP Admin → Plugins
 # Vào Open Claw → cấu hình API key
-# Nhấn Ctrl+G để bắt đầu!
+# Nhấn Ctrl+I hoặc Ctrl+G để bắt đầu!
 ```
 
 ## ⚙️ Cấu hình
@@ -244,7 +244,7 @@ Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng
 - Initial release
 - 12 built-in tools (9 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
-- Command Palette UI with `Ctrl+G` shortcut
+- Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
 - Telegram Bot integration with inline keyboard confirmations
 - Report & Analytics tool (dashboard, order/product/content reports)
 - Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)

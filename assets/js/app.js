@@ -133,13 +133,26 @@
     }
 
     /* ------------------------------------------------------------------ */
-    /* Keyboard shortcut: Ctrl+G                                          */
+    /* Keyboard shortcuts                                                 */
     /* ------------------------------------------------------------------ */
     document.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && e.key === 'g') {
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+        // Supported shortcuts to toggle the palette:
+        // - Ctrl/Cmd + G
+        // - Ctrl/Cmd + I
+        // - Ctrl/Cmd + Shift + K
+        const isToggleKey = 
+            (modifier && e.key.toLowerCase() === 'g' && !e.shiftKey && !e.altKey) ||
+            (modifier && e.key.toLowerCase() === 'i' && !e.shiftKey && !e.altKey) ||
+            (modifier && e.shiftKey && e.key.toLowerCase() === 'k' && !e.altKey);
+            
+        if (isToggleKey) {
             e.preventDefault();
             togglePalette();
         }
+        
         if (e.key === 'Escape') {
             closePalette();
         }
