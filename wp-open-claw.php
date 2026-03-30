@@ -62,6 +62,10 @@ function wpoc_init(): void {
         $dashboard->init();
     }
 
+    // SSE streaming via admin-ajax.php.
+    $stream = new \OpenClaw\REST\StreamHandler();
+    $stream->init();
+
     // Register REST API routes.
     add_action('rest_api_init', function (): void {
         $controller = new \OpenClaw\REST\AgentController();

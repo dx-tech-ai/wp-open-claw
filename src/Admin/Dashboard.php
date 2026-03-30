@@ -41,9 +41,12 @@ class Dashboard {
         );
 
         wp_localize_script('wpoc-app', 'wpocData', [
-            'restUrl'  => esc_url_raw(rest_url('open-claw/v1/')),
-            'nonce'    => wp_create_nonce('wp_rest'),
-            'adminUrl' => admin_url(),
+            'restUrl'      => esc_url_raw(rest_url('open-claw/v1/')),
+            'nonce'        => wp_create_nonce('wp_rest'),
+            'adminUrl'     => admin_url(),
+            'settingsUrl'  => admin_url('admin.php?page=wpoc-settings'),
+            'streamUrl'    => admin_url('admin-ajax.php'),
+            'streamNonce'  => wp_create_nonce('wpoc_stream_nonce'),
         ]);
     }
 
