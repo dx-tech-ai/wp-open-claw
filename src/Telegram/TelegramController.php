@@ -155,6 +155,7 @@ class TelegramController {
 
         // Extend time limit for LLM calls.
         if (function_exists('set_time_limit')) {
+            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
             set_time_limit(120);
         }
 
@@ -202,6 +203,7 @@ class TelegramController {
             }
         } catch (\Throwable $e) {
             // Log the error.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('[OpenClaw Telegram] Handler error: ' . $e->getMessage());
 
             // Notify user via Telegram.

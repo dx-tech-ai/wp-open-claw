@@ -88,6 +88,7 @@ class StreamHandler {
         }
 
         if (function_exists('set_time_limit')) {
+            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
             set_time_limit(300);
         }
 
