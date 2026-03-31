@@ -23,6 +23,7 @@ class Settings {
         'google_cse_api_key',
         'telegram_bot_token',
         'telegram_secret_token',
+        'discord_bot_token',
         'pexels_api_key',
         'unsplash_api_key',
     ];
@@ -174,6 +175,16 @@ class Settings {
             self::PAGE_SLUG . '_telegram'
         );
 
+        // Discord Section.
+        add_settings_section(
+            'wpoc_discord',
+            __('Discord Integration', 'open-claw'),
+            function () {
+                echo '<p>' . esc_html__('Control Open Claw via Discord slash commands and interaction buttons.', 'open-claw') . '</p>';
+            },
+            self::PAGE_SLUG . '_discord'
+        );
+
         $this->add_fields();
     }
 
@@ -284,6 +295,39 @@ class Settings {
         // Webhook Setup Button.
         add_settings_field('telegram_webhook', __('Webhook', 'open-claw'), [$this, 'render_telegram_webhook_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram');
 
+        // Discord Enabled.
+        add_settings_field('discord_enabled', __('Enable Discord', 'open-claw'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_enabled',
+            'description' => __('Enable Discord interactions integration.', 'open-claw'),
+        ]);
+
+        // Discord Bot Token.
+        add_settings_field('discord_bot_token', __('Bot Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_bot_token',
+            'description' => __('Bot token from Discord Developer Portal.', 'open-claw'),
+        ]);
+
+        // Discord Application ID.
+        add_settings_field('discord_application_id', __('Application ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_application_id',
+            'description' => __('Discord application (client) ID.', 'open-claw'),
+        ]);
+
+        // Discord Public Key.
+        add_settings_field('discord_public_key', __('Public Key', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_public_key',
+            'description' => __('Discord interaction public key for request signature verification.', 'open-claw'),
+        ]);
+
+        // Discord Allowed Channels.
+        add_settings_field('discord_allowed_channel_ids', __('Allowed Channel IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_allowed_channel_ids',
+            'description' => __('Comma-separated Discord channel IDs allowed to run Open Claw commands.', 'open-claw'),
+        ]);
+
+        // Discord command setup.
+        add_settings_field('discord_setup', __('Slash Command', 'open-claw'), [$this, 'render_discord_setup_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord');
+
         // --- Image Generation Fields ---
 
         // Image Gen Enabled.
@@ -344,6 +388,11 @@ class Settings {
             'telegram_bot_token'        => '',
             'telegram_secret_token'     => '',
             'telegram_allowed_chat_ids' => '',
+            'discord_enabled'           => false,
+            'discord_bot_token'         => '',
+            'discord_application_id'    => '',
+            'discord_public_key'        => '',
+            'discord_allowed_channel_ids' => '',
         ];
     }
 
@@ -368,6 +417,11 @@ class Settings {
             'telegram_bot_token'        => sanitize_text_field($input['telegram_bot_token'] ?? ''),
             'telegram_secret_token'     => sanitize_text_field($input['telegram_secret_token'] ?? ''),
             'telegram_allowed_chat_ids' => sanitize_text_field($input['telegram_allowed_chat_ids'] ?? ''),
+            'discord_enabled'           => ! empty($input['discord_enabled']),
+            'discord_bot_token'         => sanitize_text_field($input['discord_bot_token'] ?? ''),
+            'discord_application_id'    => sanitize_text_field($input['discord_application_id'] ?? ''),
+            'discord_public_key'        => sanitize_text_field($input['discord_public_key'] ?? ''),
+            'discord_allowed_channel_ids' => sanitize_text_field($input['discord_allowed_channel_ids'] ?? ''),
         ];
 
         // Preserve existing secret token if not changed.
@@ -397,6 +451,7 @@ class Settings {
             'agent'    => __('Agent', 'open-claw'),
             'image'    => __('Image', 'open-claw'),
             'telegram' => __('Telegram', 'open-claw'),
+            'discord'  => __('Discord', 'open-claw'),
         ];
         ?>
         <div class="wrap">
@@ -652,6 +707,105 @@ class Settings {
             if (rmBtn)  rmBtn.addEventListener('click', function() { telegramSetup('remove'); });
 
             // Load status after wp-api script is ready.
+            if (typeof wpApiSettings !== 'undefined') {
+                loadStatus();
+            } else {
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof wpApiSettings !== 'undefined') {
+                        loadStatus();
+                    }
+                });
+            }
+        })();
+        </script>
+        <?php
+    }
+
+    public function render_discord_setup_field(): void {
+        ?>
+        <div id="wpoc-discord-info" style="margin-bottom: 12px; padding: 10px 14px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; display: none;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span id="wpoc-dc-badge" style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; color: #fff;">...</span>
+                <strong id="wpoc-dc-bot" style="font-size: 13px;"></strong>
+            </div>
+            <div id="wpoc-dc-details" style="font-size: 12px; color: #666;"></div>
+        </div>
+        <button type="button" id="wpoc-discord-register" class="button button-primary">
+            <?php esc_html_e('Register /openclaw Command', 'open-claw'); ?>
+        </button>
+        <button type="button" id="wpoc-discord-remove" class="button">
+            <?php esc_html_e('Remove Command', 'open-claw'); ?>
+        </button>
+        <span id="wpoc-discord-status" style="margin-left: 10px;"></span>
+        <p class="description"><?php esc_html_e('Set Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command.', 'open-claw'); ?></p>
+        <script>
+        (function() {
+            function discordApi(action) {
+                return fetch(wpApiSettings.root + 'open-claw/v1/discord/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': wpApiSettings.nonce
+                    },
+                    body: JSON.stringify({ action: action })
+                }).then(function(r) { return r.json(); });
+            }
+
+            function discordSetup(action) {
+                var status = document.getElementById('wpoc-discord-status');
+                status.textContent = 'Processing...';
+                status.style.color = '#666';
+                discordApi(action).then(function(data) {
+                    status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
+                    status.style.color = data.success ? 'green' : 'red';
+                    setTimeout(loadStatus, 1000);
+                }).catch(function() {
+                    status.textContent = 'Request failed.';
+                    status.style.color = 'red';
+                });
+            }
+
+            function loadStatus() {
+                var infoBox = document.getElementById('wpoc-discord-info');
+                var badge   = document.getElementById('wpoc-dc-badge');
+                var botName = document.getElementById('wpoc-dc-bot');
+                var details = document.getElementById('wpoc-dc-details');
+
+                discordApi('status').then(function(data) {
+                    infoBox.style.display = 'block';
+
+                    if (!data.success) {
+                        badge.textContent = 'ERROR';
+                        badge.style.background = '#d63638';
+                        details.textContent = data.message || 'Cannot read Discord status.';
+                        return;
+                    }
+
+                    if (data.status === 'connected') {
+                        badge.textContent = 'CONNECTED';
+                        badge.style.background = '#00a32a';
+                    } else {
+                        badge.textContent = 'DISCONNECTED';
+                        badge.style.background = '#787c82';
+                    }
+
+                    botName.textContent = data.bot_name ? ('@' + data.bot_name) : 'Bot not detected';
+                    var commandText = data.command_registered ? 'registered' : 'not registered';
+                    var endpoint = data.interaction_url || '';
+                    details.innerHTML = 'Slash command is ' + commandText + '.<br>Interaction endpoint: <code style="font-size:11px;">' + endpoint + '</code>';
+                }).catch(function() {
+                    infoBox.style.display = 'block';
+                    badge.textContent = 'UNKNOWN';
+                    badge.style.background = '#787c82';
+                    details.textContent = 'Could not check status.';
+                });
+            }
+
+            var regBtn = document.getElementById('wpoc-discord-register');
+            var rmBtn  = document.getElementById('wpoc-discord-remove');
+            if (regBtn) regBtn.addEventListener('click', function() { discordSetup('register'); });
+            if (rmBtn)  rmBtn.addEventListener('click', function() { discordSetup('remove'); });
+
             if (typeof wpApiSettings !== 'undefined') {
                 loadStatus();
             } else {
