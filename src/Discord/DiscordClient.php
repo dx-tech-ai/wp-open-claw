@@ -34,12 +34,12 @@ class DiscordClient {
     }
 
     /**
-     * List global application commands.
+     * List application commands for the chosen scope.
      *
      * @return array|false
      */
-    public function listCommands(string $applicationId) {
-        return $this->request('GET', '/applications/' . rawurlencode($applicationId) . '/commands');
+    public function listCommands(string $applicationId, string $guildId = '') {
+        return $this->request('GET', $this->commandsPath($applicationId, $guildId));
     }
 
     /**
@@ -47,8 +47,8 @@ class DiscordClient {
      *
      * @return array|false
      */
-    public function getCommandByName(string $applicationId, string $name) {
-        $commands = $this->listCommands($applicationId);
+    public function getCommandByName(string $applicationId, string $name, string $guildId = '') {
+        $commands = $this->listCommands($applicationId, $guildId);
         if (! is_array($commands)) {
             return false;
         }
@@ -63,38 +63,50 @@ class DiscordClient {
     }
 
     /**
-     * Create or update the global slash command.
+     * Create or update the slash command.
      *
      * @return array|false
      */
-    public function upsertAgentCommand(string $applicationId, string $commandName = 'openclaw') {
+    public function upsertAgentCommand(string $applicationId, string $commandName = 'openclaw', string $guildId = '') {
         $payload = [
             'name'        => $commandName,
-            'description' => 'Send a request to Open Claw agent',
+            'description' => 'Control Open Claw from Discord',
             'options'     => [
                 [
-                    'type'        => 3, // STRING
-                    'name'        => 'prompt',
-                    'description' => 'What should Open Claw do?',
-                    'required'    => true,
+                    'type'        => 1, // SUB_COMMAND
+                    'name'        => 'run',
+                    'description' => 'Run a prompt with Open Claw',
+                    'options'     => [
+                        [
+                            'type'        => 3, // STRING
+                            'name'        => 'prompt',
+                            'description' => 'What should Open Claw do?',
+                            'required'    => true,
+                        ],
+                    ],
+                ],
+                [
+                    'type'        => 1, // SUB_COMMAND
+                    'name'        => 'reset',
+                    'description' => 'Clear your saved session in this channel',
                 ],
             ],
         ];
 
         return $this->request(
             'POST',
-            '/applications/' . rawurlencode($applicationId) . '/commands',
+            $this->commandsPath($applicationId, $guildId),
             $payload
         );
     }
 
     /**
-     * Delete a global command by ID.
+     * Delete a command by ID.
      */
-    public function deleteCommand(string $applicationId, string $commandId): bool {
+    public function deleteCommand(string $applicationId, string $commandId, string $guildId = ''): bool {
         $result = $this->request(
             'DELETE',
-            '/applications/' . rawurlencode($applicationId) . '/commands/' . rawurlencode($commandId),
+            $this->commandsPath($applicationId, $guildId) . '/' . rawurlencode($commandId),
             null
         );
 
@@ -179,5 +191,18 @@ class DiscordClient {
         }
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Build the API path for the configured command scope.
+     */
+    private function commandsPath(string $applicationId, string $guildId = ''): string {
+        $base = '/applications/' . rawurlencode($applicationId);
+
+        if ($guildId !== '') {
+            return $base . '/guilds/' . rawurlencode($guildId) . '/commands';
+        }
+
+        return $base . '/commands';
     }
 }

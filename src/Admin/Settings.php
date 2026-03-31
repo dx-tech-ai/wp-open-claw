@@ -319,10 +319,22 @@ class Settings {
             'description' => __('Discord interaction public key for request signature verification.', 'open-claw'),
         ]);
 
+        // Discord Guild ID.
+        add_settings_field('discord_guild_id', __('Guild ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_guild_id',
+            'description' => __('Optional Discord server (guild) ID. Use this for faster slash command updates during setup.', 'open-claw'),
+        ]);
+
         // Discord Allowed Channels.
         add_settings_field('discord_allowed_channel_ids', __('Allowed Channel IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_allowed_channel_ids',
             'description' => __('Comma-separated Discord channel IDs allowed to run Open Claw commands.', 'open-claw'),
+        ]);
+
+        // Discord Allowed Users.
+        add_settings_field('discord_allowed_user_ids', __('Allowed User IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+            'label_for'   => 'discord_allowed_user_ids',
+            'description' => __('Comma-separated Discord user IDs allowed to execute commands in approved channels.', 'open-claw'),
         ]);
 
         // Discord command setup.
@@ -392,7 +404,9 @@ class Settings {
             'discord_bot_token'         => '',
             'discord_application_id'    => '',
             'discord_public_key'        => '',
+            'discord_guild_id'          => '',
             'discord_allowed_channel_ids' => '',
+            'discord_allowed_user_ids'  => '',
         ];
     }
 
@@ -421,7 +435,9 @@ class Settings {
             'discord_bot_token'         => sanitize_text_field($input['discord_bot_token'] ?? ''),
             'discord_application_id'    => sanitize_text_field($input['discord_application_id'] ?? ''),
             'discord_public_key'        => sanitize_text_field($input['discord_public_key'] ?? ''),
+            'discord_guild_id'          => sanitize_text_field($input['discord_guild_id'] ?? ''),
             'discord_allowed_channel_ids' => sanitize_text_field($input['discord_allowed_channel_ids'] ?? ''),
+            'discord_allowed_user_ids'  => sanitize_text_field($input['discord_allowed_user_ids'] ?? ''),
         ];
 
         // Preserve existing secret token if not changed.
@@ -737,7 +753,7 @@ class Settings {
             <?php esc_html_e('Remove Command', 'open-claw'); ?>
         </button>
         <span id="wpoc-discord-status" style="margin-left: 10px;"></span>
-        <p class="description"><?php esc_html_e('Set Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command.', 'open-claw'); ?></p>
+        <p class="description"><?php esc_html_e('Set the Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command. Add a Guild ID for faster command updates during setup.', 'open-claw'); ?></p>
         <script>
         (function() {
             function discordApi(action) {
@@ -791,8 +807,10 @@ class Settings {
 
                     botName.textContent = data.bot_name ? ('@' + data.bot_name) : 'Bot not detected';
                     var commandText = data.command_registered ? 'registered' : 'not registered';
+                    var scope = data.command_scope === 'guild' ? 'guild' : 'global';
+                    var guildText = data.guild_id ? ('<br>Guild ID: <code style="font-size:11px;">' + data.guild_id + '</code>') : '';
                     var endpoint = data.interaction_url || '';
-                    details.innerHTML = 'Slash command is ' + commandText + '.<br>Interaction endpoint: <code style="font-size:11px;">' + endpoint + '</code>';
+                    details.innerHTML = 'Slash command is ' + commandText + ' (' + scope + ' scope).<br>Interaction endpoint: <code style="font-size:11px;">' + endpoint + '</code>' + guildText;
                 }).catch(function() {
                     infoBox.style.display = 'block';
                     badge.textContent = 'UNKNOWN';

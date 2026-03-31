@@ -156,15 +156,18 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 1. Create an application in the Discord Developer Portal and add the bot to your server
 2. Copy the `Bot Token`, `Application ID`, and `Public Key`
 3. Open **Open Claw → Discord** in WordPress and fill in those values
-4. Add `Allowed Channel IDs` to restrict which channels can run the bot
-5. Expose your WordPress site over HTTPS and set:
+4. Add `Allowed Channel IDs` and `Allowed User IDs` to restrict where and who can run the bot
+5. Optionally add a `Guild ID` if you want faster slash command updates inside one Discord server
+6. Expose your WordPress site over HTTPS and set:
    `https://your-domain/wp-json/open-claw/v1/discord/interactions`
    as the `Interactions Endpoint URL` in the Discord Developer Portal
-6. Click **Register /openclaw Command**
-7. Run `/openclaw` in an allowed Discord channel
+7. Click **Register /openclaw Command**
+8. Run `/openclaw run` in an allowed Discord channel
 
 **Discord capabilities:**
 - `/openclaw` reuses the same Kernel as the admin chatbox and Telegram
+- Only users listed in `Allowed User IDs` can execute commands in approved channels
+- Supports `Guild ID` for faster guild-scoped command updates during setup
 - Discord receives a fast acknowledgement, then the bot posts results to the channel
 - Write actions render **Approve** / **Reject** buttons
 - Only the user who started the request can confirm it
@@ -197,9 +200,10 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 ### Discord
 
 ```
-/openclaw prompt: Show me site info
-/openclaw prompt: Create a category called Discord Test
-/openclaw prompt: Draft a post about WordPress performance
+/openclaw run prompt: Show me site info
+/openclaw run prompt: Create a category called Discord Test
+/openclaw run prompt: Draft a post about WordPress performance
+/openclaw reset
 ```
 
 ## ❓ FAQ

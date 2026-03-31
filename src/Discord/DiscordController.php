@@ -94,21 +94,24 @@ class DiscordController {
         $action   = $request->get_param('action');
         $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
 
-        $token  = $settings['discord_bot_token'] ?? '';
-        $appId  = $settings['discord_application_id'] ?? '';
-        $client = new DiscordClient($token);
+        $token   = $settings['discord_bot_token'] ?? '';
+        $appId   = $settings['discord_application_id'] ?? '';
+        $guildId = trim((string) ($settings['discord_guild_id'] ?? ''));
+        $client  = new DiscordClient($token);
 
         if ($action === 'status') {
             $bot     = ! empty($token) ? $client->getCurrentBot() : false;
             $command = (! empty($token) && ! empty($appId))
-                ? $client->getCommandByName($appId, self::COMMAND_NAME)
+                ? $client->getCommandByName($appId, self::COMMAND_NAME, $guildId)
                 : false;
 
             return new WP_REST_Response([
                 'success'          => true,
                 'status'           => $bot ? 'connected' : 'disconnected',
                 'bot_name'         => $bot['username'] ?? '',
-                'command_registered'=> (bool) $command,
+                'command_registered' => (bool) $command,
+                'command_scope'    => $guildId !== '' ? 'guild' : 'global',
+                'guild_id'         => $guildId,
                 'interaction_url'  => rest_url(self::NAMESPACE . '/discord/interactions'),
                 'message'          => $bot ? 'Discord credentials look valid.' : 'Discord Bot Token not set or invalid.',
             ]);
@@ -122,18 +125,19 @@ class DiscordController {
         }
 
         if ($action === 'register') {
-            $result = $client->upsertAgentCommand($appId, self::COMMAND_NAME);
+            $result = $client->upsertAgentCommand($appId, self::COMMAND_NAME, $guildId);
             return new WP_REST_Response([
                 'success' => (bool) $result,
                 'message' => $result
                     ? 'Slash command /' . self::COMMAND_NAME . ' registered or updated.'
                     : 'Failed to register slash command.',
+                'command_scope' => $guildId !== '' ? 'guild' : 'global',
                 'interaction_url' => rest_url(self::NAMESPACE . '/discord/interactions'),
             ]);
         }
 
         // remove
-        $command = $client->getCommandByName($appId, self::COMMAND_NAME);
+        $command = $client->getCommandByName($appId, self::COMMAND_NAME, $guildId);
         if (! $command) {
             return new WP_REST_Response([
                 'success' => true,
@@ -141,7 +145,7 @@ class DiscordController {
             ]);
         }
 
-        $deleted = $client->deleteCommand($appId, (string) ($command['id'] ?? ''));
+        $deleted = $client->deleteCommand($appId, (string) ($command['id'] ?? ''), $guildId);
         return new WP_REST_Response([
             'success' => $deleted,
             'message' => $deleted ? 'Slash command removed.' : 'Failed to remove slash command.',
@@ -159,12 +163,23 @@ class DiscordController {
             return $this->interactionMessage('This channel is not allowed for Open Claw.');
         }
 
+        if (! $this->isAllowedUser($userId, $settings)) {
+            return $this->interactionMessage('You are not allowed to use Open Claw in this Discord workspace.');
+        }
+
         $commandName = (string) ($payload['data']['name'] ?? '');
         if ($commandName !== self::COMMAND_NAME) {
             return $this->interactionMessage('Unknown command.');
         }
 
-        $prompt = $this->extractPrompt($payload['data']['options'] ?? []);
+        $command = $this->extractCommandPayload($payload['data']['options'] ?? []);
+
+        if ($command['action'] === 'reset') {
+            $this->clearSession($channelId, $userId);
+            return $this->interactionMessage('Your Discord session has been cleared.');
+        }
+
+        $prompt = $command['prompt'];
         if ($prompt === '') {
             return $this->interactionMessage('Please provide a prompt.');
         }
@@ -196,6 +211,10 @@ class DiscordController {
 
         if (! $this->isAllowedChannel($channelId, $settings)) {
             return $this->interactionMessage('This channel is not allowed for Open Claw.');
+        }
+
+        if (! $this->isAllowedUser($userId, $settings)) {
+            return $this->interactionMessage('You are not allowed to use Open Claw in this Discord workspace.');
         }
 
         if (! preg_match('/^wpoc:(confirm|reject):([0-9a-f\-]{36}):([^:]+)$/i', $customId, $matches)) {
@@ -247,6 +266,7 @@ class DiscordController {
             'type' => 4,
             'data' => [
                 'content' => $this->truncateContent($message),
+                'flags'   => self::ACK_FLAGS_EPHEMERAL,
             ],
         ], 200);
     }
@@ -507,6 +527,27 @@ class DiscordController {
     /**
      * Extract prompt option from slash command payload.
      */
+    private function extractCommandPayload(array $options): array {
+        if (! empty($options[0]['type']) && (int) $options[0]['type'] === 1) {
+            $subcommand = (string) ($options[0]['name'] ?? '');
+
+            return [
+                'action' => $subcommand === 'reset' ? 'reset' : 'run',
+                'prompt' => $subcommand === 'run'
+                    ? $this->extractPrompt($options[0]['options'] ?? [])
+                    : '',
+            ];
+        }
+
+        return [
+            'action' => 'run',
+            'prompt' => $this->extractPrompt($options),
+        ];
+    }
+
+    /**
+     * Extract prompt option from slash command payload.
+     */
     private function extractPrompt(array $options): string {
         foreach ($options as $option) {
             if (($option['name'] ?? '') === 'prompt') {
@@ -545,6 +586,19 @@ class DiscordController {
     }
 
     /**
+     * Check if a Discord user is allowed to execute commands.
+     */
+    private function isAllowedUser(string $userId, array $settings): bool {
+        $allowed = (string) ($settings['discord_allowed_user_ids'] ?? '');
+        if ($allowed === '') {
+            return false;
+        }
+
+        $ids = array_map('trim', explode(',', $allowed));
+        return in_array($userId, $ids, true);
+    }
+
+    /**
      * Resolve a deterministic administrator account for integration execution.
      */
     private function resolveIntegrationUserId(): int {
@@ -568,6 +622,13 @@ class DiscordController {
      */
     private function sessionKey(string $channelId, string $userId): string {
         return 'wpoc_discord_session_' . sanitize_key($channelId . '_' . $userId);
+    }
+
+    /**
+     * Clear a Discord session for the current channel/user pair.
+     */
+    private function clearSession(string $channelId, string $userId): void {
+        delete_transient($this->sessionKey($channelId, $userId));
     }
 
     /**

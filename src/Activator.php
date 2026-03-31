@@ -64,7 +64,9 @@ class Activator {
                 'discord_bot_token'         => '',
                 'discord_application_id'    => '',
                 'discord_public_key'        => '',
+                'discord_guild_id'          => '',
                 'discord_allowed_channel_ids' => '',
+                'discord_allowed_user_ids'  => '',
             ]);
         }
     }

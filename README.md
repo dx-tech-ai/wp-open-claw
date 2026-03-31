@@ -182,15 +182,18 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 1. Tạo application trong Discord Developer Portal và thêm bot vào server
 2. Sao chép `Bot Token`, `Application ID`, `Public Key`
 3. Vào **Open Claw → Discord** và điền các thông tin trên
-4. Thêm `Allowed Channel IDs` để giới hạn channel được phép dùng bot
-5. Tạo HTTPS public URL cho WordPress của bạn, sau đó cấu hình:
+4. Thêm `Allowed Channel IDs` và `Allowed User IDs` để giới hạn nơi và người được phép dùng bot
+5. Tùy chọn thêm `Guild ID` nếu muốn slash command cập nhật nhanh trong một server Discord cụ thể
+6. Tạo HTTPS public URL cho WordPress của bạn, sau đó cấu hình:
    `https://your-domain/wp-json/open-claw/v1/discord/interactions`
    vào ô `Interactions Endpoint URL` trong Discord Developer Portal
-6. Nhấn **Register /openclaw Command**
-7. Trong channel đã whitelist, chạy `/openclaw`
+7. Nhấn **Register /openclaw Command**
+8. Trong channel đã whitelist, chạy `/openclaw run`
 
 **Tính năng Discord:**
 - Slash command `/openclaw` dùng chung Kernel với admin chatbox và Telegram
+- Chỉ user nằm trong `Allowed User IDs` mới được chạy lệnh trong channel hợp lệ
+- Hỗ trợ `Guild ID` để đăng ký guild command nhanh hơn khi setup
 - Discord ack ngay để tránh timeout, sau đó bot post kết quả vào channel
 - Hành động ghi dữ liệu hiển thị nút **Approve** / **Reject**
 - Chỉ user khởi tạo yêu cầu mới có thể bấm nút xác nhận
@@ -223,9 +226,10 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 ### Discord
 
 ```
-/openclaw prompt: Show me site info
-/openclaw prompt: Create a category called Discord Test
-/openclaw prompt: Draft a post about WordPress performance
+/openclaw run prompt: Show me site info
+/openclaw run prompt: Create a category called Discord Test
+/openclaw run prompt: Draft a post about WordPress performance
+/openclaw reset
 ```
 
 ### Báo cáo & Thống kê
