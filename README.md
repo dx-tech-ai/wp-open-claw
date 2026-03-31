@@ -23,6 +23,7 @@
 | 💾 **Session Persistence** | Lưu trạng thái phiên làm việc qua WordPress transients |
 | 🔍 **Web Research** | Tìm kiếm web trực tiếp (DuckDuckGo miễn phí hoặc Google CSE) |
 | 📱 **Telegram Bot** | Điều khiển WordPress qua Telegram với xác nhận bằng inline keyboard |
+| 💬 **Discord Bot** | Điều khiển WordPress qua Discord slash command với nút Approve/Reject |
 
 ## 🛠️ 12 Tools tích hợp
 
@@ -88,6 +89,10 @@ wp-open-claw/
 │   │   ├── TelegramController.php  # Webhook handler
 │   │   ├── TelegramClient.php      # Telegram Bot API client
 │   │   └── StepFormatter.php       # Format agent steps for Telegram
+│   ├── Discord/
+│   │   ├── DiscordController.php   # Discord interactions handler
+│   │   ├── DiscordClient.php       # Discord REST API client
+│   │   └── StepFormatter.php       # Format agent steps for Discord
 ├── assets/
 │   ├── css/
 │   └── js/
@@ -172,6 +177,25 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 - `/start` — Hiển trợ giúp
 - `/reset` — Xóa phiên làm việc hiện tại
 
+### Discord Bot
+
+1. Tạo application trong Discord Developer Portal và thêm bot vào server
+2. Sao chép `Bot Token`, `Application ID`, `Public Key`
+3. Vào **Open Claw → Discord** và điền các thông tin trên
+4. Thêm `Allowed Channel IDs` để giới hạn channel được phép dùng bot
+5. Tạo HTTPS public URL cho WordPress của bạn, sau đó cấu hình:
+   `https://your-domain/wp-json/open-claw/v1/discord/interactions`
+   vào ô `Interactions Endpoint URL` trong Discord Developer Portal
+6. Nhấn **Register /openclaw Command**
+7. Trong channel đã whitelist, chạy `/openclaw`
+
+**Tính năng Discord:**
+- Slash command `/openclaw` dùng chung Kernel với admin chatbox và Telegram
+- Discord ack ngay để tránh timeout, sau đó bot post kết quả vào channel
+- Hành động ghi dữ liệu hiển thị nút **Approve** / **Reject**
+- Chỉ user khởi tạo yêu cầu mới có thể bấm nút xác nhận
+- Session được lưu theo từng cặp `channel + Discord user`
+
 ## 💡 Ví dụ sử dụng
 
 ### WordPress
@@ -194,6 +218,14 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 "Cập nhật đơn hàng #123 sang trạng thái completed"
 "Tìm khách hàng có email chứa 'gmail'"
 "Cho tôi xem top 5 khách hàng chi tiêu nhiều nhất"
+```
+
+### Discord
+
+```
+/openclaw prompt: Show me site info
+/openclaw prompt: Create a category called Discord Test
+/openclaw prompt: Draft a post about WordPress performance
 ```
 
 ### Báo cáo & Thống kê
@@ -246,6 +278,7 @@ Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 - Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
 - Telegram Bot integration with inline keyboard confirmations
+- Discord slash command integration with approval buttons
 - Report & Analytics tool (dashboard, order/product/content reports)
 - Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)
 - ReAct Loop engine with configurable max iterations
