@@ -20,6 +20,11 @@ class Settings {
         'openai_api_key',
         'anthropic_api_key',
         'gemini_api_key',
+        'gemini_api_key_2',
+        'gemini_api_key_3',
+        'gemini_api_key_4',
+        'gemini_api_key_5',
+        'cloudflare_api_token',
         'google_cse_api_key',
         'telegram_bot_token',
         'telegram_secret_token',
@@ -185,6 +190,7 @@ class Settings {
                 'openai'    => 'OpenAI',
                 'gemini'    => 'Google Gemini (AI Studio)',
                 'anthropic' => 'Anthropic (Claude)',
+                'cloudflare' => 'Cloudflare Workers AI (Free)',
             ],
         ]);
 
@@ -224,9 +230,33 @@ class Settings {
         ]);
 
         // Google Gemini API Key.
-        add_settings_field('gemini_api_key', __('Google AI Studio API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key', __('Google AI Studio API Key 1', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key',
             'description' => __('Get your free key at aistudio.google.com', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_2', __('API Key 2 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_2',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_3', __('API Key 3 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_3',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_4', __('API Key 4 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_4',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_5', __('API Key 5 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_5',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
             'data-provider' => 'gemini',
         ]);
 
@@ -241,6 +271,31 @@ class Settings {
                 'gemini-3.1-pro-preview'       => 'Gemini 3.1 Pro (Preview)',
             ],
             'data-provider' => 'gemini',
+        ]);
+
+        // Cloudflare Account ID.
+        add_settings_field('cloudflare_account_id', __('Cloudflare Account ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_account_id',
+            'description' => __('Find in Cloudflare Dashboard → Workers & Pages → Account ID.', 'open-claw'),
+            'data-provider' => 'cloudflare',
+        ]);
+
+        // Cloudflare API Token.
+        add_settings_field('cloudflare_api_token', __('Cloudflare API Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_api_token',
+            'description' => __('Create at dash.cloudflare.com/profile/api-tokens with Workers AI permission.', 'open-claw'),
+            'data-provider' => 'cloudflare',
+        ]);
+
+        // Cloudflare Model.
+        add_settings_field('cloudflare_model', __('Cloudflare Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_model',
+            'options'   => [
+                '@cf/qwen/qwen2.5-72b-instruct'                  => 'Qwen 2.5 72B (Best Vietnamese)',
+                '@cf/google/gemma-3-12b-it'                      => 'Gemma 3 12B (Fast, multilingual)',
+                '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b'   => 'DeepSeek R1 32B (Reasoning)',
+            ],
+            'data-provider' => 'cloudflare',
         ]);
 
         // Google CSE API Key.
@@ -331,7 +386,14 @@ class Settings {
             'anthropic_api_key'         => '',
             'anthropic_model'           => 'claude-sonnet-4-20250514',
             'gemini_api_key'            => '',
+            'gemini_api_key_2'          => '',
+            'gemini_api_key_3'          => '',
+            'gemini_api_key_4'          => '',
+            'gemini_api_key_5'          => '',
             'gemini_model'              => 'gemini-2.5-flash',
+            'cloudflare_account_id'     => '',
+            'cloudflare_api_token'      => '',
+            'cloudflare_model'          => '@cf/qwen/qwen2.5-72b-instruct',
             'google_cse_api_key'        => '',
             'google_cse_cx'             => '',
             'max_iterations'            => 10,
@@ -349,13 +411,20 @@ class Settings {
 
     public function sanitize_settings(array $input): array {
         $sanitized = [
-            'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['llm_provider'] : 'openai',
+            'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini', 'cloudflare'], true) ? $input['llm_provider'] : 'openai',
             'openai_api_key'            => sanitize_text_field($input['openai_api_key'] ?? ''),
             'openai_model'              => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
             'anthropic_api_key'         => sanitize_text_field($input['anthropic_api_key'] ?? ''),
             'anthropic_model'           => sanitize_text_field($input['anthropic_model'] ?? 'claude-sonnet-4-20250514'),
             'gemini_api_key'            => sanitize_text_field($input['gemini_api_key'] ?? ''),
+            'gemini_api_key_2'          => sanitize_text_field($input['gemini_api_key_2'] ?? ''),
+            'gemini_api_key_3'          => sanitize_text_field($input['gemini_api_key_3'] ?? ''),
+            'gemini_api_key_4'          => sanitize_text_field($input['gemini_api_key_4'] ?? ''),
+            'gemini_api_key_5'          => sanitize_text_field($input['gemini_api_key_5'] ?? ''),
             'gemini_model'              => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.5-flash'),
+            'cloudflare_account_id'     => sanitize_text_field($input['cloudflare_account_id'] ?? ''),
+            'cloudflare_api_token'      => sanitize_text_field($input['cloudflare_api_token'] ?? ''),
+            'cloudflare_model'          => sanitize_text_field($input['cloudflare_model'] ?? '@cf/qwen/qwen2.5-72b-instruct'),
             'google_cse_api_key'        => sanitize_text_field($input['google_cse_api_key'] ?? ''),
             'google_cse_cx'             => sanitize_text_field($input['google_cse_cx'] ?? ''),
             'max_iterations'            => max(1, min(20, absint($input['max_iterations'] ?? 10))),
@@ -449,7 +518,7 @@ class Settings {
             var providerSelect = document.getElementById('llm_provider');
             if (!providerSelect) return;
 
-            var providers = ['openai', 'anthropic', 'gemini'];
+            var providers = ['openai', 'anthropic', 'gemini', 'cloudflare'];
             providers.forEach(function(p) {
                 document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
                     var tr = el.closest('tr');
@@ -493,12 +562,13 @@ class Settings {
     public function render_text_field(array $args): void {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
+        $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
         ?>
         <input type="text"
                id="<?php echo esc_attr($args['label_for']); ?>"
                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
                value="<?php echo esc_attr($value); ?>"
-               class="regular-text" />
+               class="regular-text <?php echo esc_attr($providerClass); ?>" />
         <?php if (! empty($args['description'])) : ?>
             <p class="description"><?php echo esc_html($args['description']); ?></p>
         <?php endif;
