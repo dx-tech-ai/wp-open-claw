@@ -18,7 +18,8 @@
 | 🧠 **ReAct Loop** | Agent reasons, selects tools, executes, observes results, and continues |
 | ✅ **Confirm Before Executing** | Data-modifying actions require user confirmation |
 | 🔗 **Chain Actions** | Automatically performs sequential chains of actions |
-| 🔌 **Multi LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) |
+| 🔌 **Multi LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) · Cloudflare Workers AI (Free) |
+| 🔄 **Multi-Key & Failover** | Gemini supports up to 5 API keys with round-robin rotation + auto failover to Cloudflare on quota exhaustion |
 | 🛒 **WooCommerce Ready** | Auto-activates product, order, and customer management tools |
 | 💾 **Session Persistence** | Saves session state via WordPress transients |
 | 🔍 **Web Research** | Direct web search (free DuckDuckGo or Google CSE) |
@@ -71,8 +72,9 @@ wp-open-claw/
 │   ├── LLM/
 │   │   ├── ClientInterface.php
 │   │   ├── OpenAIClient.php
-│   │   ├── GeminiClient.php
-│   │   └── AnthropicClient.php
+│   │   ├── GeminiClient.php      # Multi-key rotation (5 keys)
+│   │   ├── AnthropicClient.php
+│   │   └── CloudflareClient.php  # Cloudflare Workers AI
 │   ├── REST/
 │   │   └── AgentController.php # REST API endpoints
 │   ├── Admin/
@@ -99,9 +101,11 @@ User Input → Kernel.handle()
     ↓
 System Prompt (+ ContextProvider snapshot)
     ↓
-LLM Chat (OpenAI / Gemini / Anthropic)
+LLM Chat (OpenAI / Gemini / Anthropic / Cloudflare)
     ↓
-┌─ Text Response → Return to user
+┌─ Rate Limit (429) → Failover to Cloudflare (if configured)
+│
+├─ Text Response → Return to user
 │
 └─ Tool Call → Manager.dispatch()
        ↓
@@ -138,9 +142,18 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 | Provider | Models | Free Tier | Get API Key |
 |----------|--------|-----------|-------------|
-| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview, 2.0 Flash Lite | ✅ Yes | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview | ✅ Yes (supports 5-key rotation) | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Cloudflare Workers AI** | Qwen 2.5 72B, Gemma 3 12B, DeepSeek R1 32B | ✅ Yes (generous free tier) | [dash.cloudflare.com](https://dash.cloudflare.com/profile/api-tokens) |
 | **OpenAI** | GPT-4o, GPT-4o Mini, GPT-4 Turbo | ❌ No | [platform.openai.com](https://platform.openai.com) |
 | **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku | ❌ No | [console.anthropic.com](https://console.anthropic.com) |
+
+### Gemini Multi-Key Rotation
+
+To avoid rate limits on the free tier, you can configure up to **5 API keys** from Google AI Studio. The plugin automatically rotates (round-robin) between keys and retries on 429 errors.
+
+### Cloudflare Failover
+
+If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will **automatically switch to Cloudflare** when the primary provider (Gemini/OpenAI/Anthropic) hits rate limits. No need to select Cloudflare as primary — just fill in the credentials and failover works automatically.
 
 ### Web Search
 
@@ -158,7 +171,7 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 3. Open **Open Claw → Discord** in WordPress and fill in those values
 4. Add `Allowed Channel IDs` and `Allowed User IDs` to restrict where and who can run the bot
 5. Optionally add a `Guild ID` if you want faster slash command updates inside one Discord server
-6. Expose your WordPress site over HTTPS and set:
+6. Expose your WordPress site over HTTPS, preferably with `ngrok` for local testing, and set:
    `https://your-domain/wp-json/open-claw/v1/discord/interactions`
    as the `Interactions Endpoint URL` in the Discord Developer Portal
 7. Click **Register /openclaw Command**
@@ -234,6 +247,13 @@ Yes! The agent supports Chain Actions — after confirming one action, the agent
 </details>
 
 ## 📋 Changelog
+
+### 1.1.0
+
+- **Gemini Multi-Key Rotation**: Support up to 5 API keys with round-robin rotation, auto-retry on 429 rate limit
+- **Cloudflare Workers AI**: New free provider — Qwen 2.5 72B (best Vietnamese), Gemma 3 12B (fast), DeepSeek R1 32B (reasoning)
+- **Auto Failover**: Automatically switch to Cloudflare when primary provider hits quota
+- Fix: `render_text_field` supports provider toggle CSS class
 
 ### 1.0.0
 

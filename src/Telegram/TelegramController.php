@@ -51,6 +51,11 @@ class TelegramController {
                         return in_array($value, ['register', 'remove', 'status'], true);
                     },
                 ],
+                'bot_token' => [
+                    'required'          => false,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
             ],
         ]);
     }
@@ -300,9 +305,11 @@ class TelegramController {
      * Handle webhook setup (register/remove).
      */
     public function handle_setup(WP_REST_Request $request): WP_REST_Response {
-        $action   = $request->get_param('action');
-        $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
-        $token    = $settings['telegram_bot_token'] ?? '';
+        $action    = $request->get_param('action');
+        $new_token = $request->get_param('bot_token') ?? '';
+        $settings  = \OpenClaw\Admin\Settings::get_decrypted_settings();
+        
+        $token = !empty($new_token) ? $new_token : ($settings['telegram_bot_token'] ?? '');
 
         if (empty($token)) {
             return new WP_REST_Response([
@@ -345,6 +352,8 @@ class TelegramController {
         if ($action === 'register') {
             $secret      = $settings['telegram_secret_token'] ?? '';
             $webhook_url = rest_url(self::NAMESPACE . '/telegram/webhook');
+            $raw_settings = get_option('wpoc_settings', []);
+            $settings_changed = false;
 
             // Generate secret token if not set or contains invalid characters.
             // Telegram only allows: A-Z, a-z, 0-9, _ and - in secret_token.
@@ -354,9 +363,18 @@ class TelegramController {
                 for ($i = 0; $i < 64; $i++) {
                     $secret .= $chars[random_int(0, strlen($chars) - 1)];
                 }
-                $raw    = get_option('wpoc_settings', []);
-                $raw['telegram_secret_token'] = \OpenClaw\Admin\Settings::encrypt_value($secret);
-                update_option('wpoc_settings', $raw);
+                $raw_settings['telegram_secret_token'] = \OpenClaw\Admin\Settings::encrypt_value($secret);
+                $settings_changed = true;
+            }
+
+            // Save the new bot token if it was provided
+            if (!empty($new_token)) {
+                $raw_settings['telegram_bot_token'] = \OpenClaw\Admin\Settings::encrypt_value($new_token);
+                $settings_changed = true;
+            }
+            
+            if ($settings_changed) {
+                update_option('wpoc_settings', $raw_settings);
             }
 
             $result = $client->setWebhook($webhook_url, $secret);

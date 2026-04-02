@@ -18,7 +18,8 @@
 | 🧠 **ReAct Loop** | Agent tự suy luận, chọn tool, thực thi, quan sát kết quả và tiếp tục |
 | ✅ **Xác nhận trước khi thực thi** | Hành động thay đổi dữ liệu cần xác nhận từ người dùng |
 | 🔗 **Chain Actions** | Tự động thực hiện chuỗi hành động liên tiếp |
-| 🔌 **Đa LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) |
+| 🔌 **Đa LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) · Cloudflare Workers AI (Free) |
+| 🔄 **Multi-Key & Failover** | Gemini hỗ trợ tối đa 5 API keys xoay vòng + tự động failover sang Cloudflare khi hết quota |
 | 🛒 **WooCommerce Ready** | Tự động kích hoạt tool quản lý sản phẩm, đơn hàng, khách hàng |
 | 💾 **Session Persistence** | Lưu trạng thái phiên làm việc qua WordPress transients |
 | 🔍 **Web Research** | Tìm kiếm web trực tiếp (DuckDuckGo miễn phí hoặc Google CSE) |
@@ -74,8 +75,9 @@ wp-open-claw/
 │   ├── LLM/
 │   │   ├── ClientInterface.php
 │   │   ├── OpenAIClient.php
-│   │   ├── GeminiClient.php
-│   │   └── AnthropicClient.php
+│   │   ├── GeminiClient.php      # Multi-key rotation (5 keys)
+│   │   ├── AnthropicClient.php
+│   │   └── CloudflareClient.php  # Cloudflare Workers AI
 │   ├── REST/
 │   │   └── AgentController.php # REST API endpoints
 │   ├── Admin/
@@ -106,9 +108,11 @@ User Input → Kernel.handle()
     ↓
 System Prompt (+ ContextProvider snapshot)
     ↓
-LLM Chat (OpenAI / Gemini / Anthropic)
+LLM Chat (OpenAI / Gemini / Anthropic / Cloudflare)
     ↓
-┌─ Text Response → Return to user
+┌─ Rate Limit (429) → Failover to Cloudflare (if configured)
+│
+├─ Text Response → Return to user
 │
 └─ Tool Call → Manager.dispatch()
        ↓
@@ -145,9 +149,18 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 | Provider | Models | Free Tier | Lấy API Key |
 |----------|--------|-----------|-------------|
-| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview, 2.0 Flash Lite | ✅ Có | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview | ✅ Có (hỗ trợ 5 keys xoay vòng) | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Cloudflare Workers AI** | Qwen 2.5 72B, Gemma 3 12B, DeepSeek R1 32B | ✅ Có (generous free tier) | [dash.cloudflare.com](https://dash.cloudflare.com/profile/api-tokens) |
 | **OpenAI** | GPT-4o, GPT-4o Mini, GPT-4 Turbo | ❌ Không | [platform.openai.com](https://platform.openai.com) |
 | **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku | ❌ Không | [console.anthropic.com](https://console.anthropic.com) |
+
+### Gemini Multi-Key Rotation
+
+Để tránh rate limit trên free tier, bạn có thể cấu hình tối đa **5 API keys** từ Google AI Studio. Plugin sẽ tự động xoay vòng (round-robin) giữa các keys và retry khi gặp lỗi 429.
+
+### Cloudflare Failover
+
+Nếu bạn cấu hình Cloudflare Workers AI (Account ID + API Token), plugin sẽ **tự động chuyển sang Cloudflare** khi provider chính (Gemini/OpenAI/Anthropic) bị rate limit. Không cần chọn Cloudflare làm provider chính — chỉ cần điền thông tin là failover sẽ hoạt động.
 
 ### Web Search
 
@@ -184,7 +197,7 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 3. Vào **Open Claw → Discord** và điền các thông tin trên
 4. Thêm `Allowed Channel IDs` và `Allowed User IDs` để giới hạn nơi và người được phép dùng bot
 5. Tùy chọn thêm `Guild ID` nếu muốn slash command cập nhật nhanh trong một server Discord cụ thể
-6. Tạo HTTPS public URL cho WordPress của bạn, sau đó cấu hình:
+6. Tạo HTTPS public URL cho WordPress của bạn, ưu tiên dùng `ngrok` khi test local, sau đó cấu hình:
    `https://your-domain/wp-json/open-claw/v1/discord/interactions`
    vào ô `Interactions Endpoint URL` trong Discord Developer Portal
 7. Nhấn **Register /openclaw Command**
@@ -274,6 +287,13 @@ Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng
 </details>
 
 ## 📋 Changelog
+
+### 1.1.0
+
+- **Gemini Multi-Key Rotation**: Hỗ trợ tối đa 5 API keys xoay vòng, tự động retry khi gặp rate limit 429
+- **Cloudflare Workers AI**: Provider mới hoàn toàn miễn phí — Qwen 2.5 72B (viết tiếng Việt), Gemma 3 12B (nhanh), DeepSeek R1 32B (reasoning)
+- **Auto Failover**: Tự động chuyển sang Cloudflare khi provider chính hết quota
+- Fix: `render_text_field` hỗ trợ provider toggle CSS class
 
 ### 1.0.0
 

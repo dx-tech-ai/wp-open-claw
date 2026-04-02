@@ -94,6 +94,8 @@ class DiscordClient {
         ];
 
         return $this->request(
+            // Discord POST /commands acts as an upsert by name within the current scope.
+            // PATCH requires a command ID, while PUT on the collection endpoint is bulk overwrite.
             'POST',
             $this->commandsPath($applicationId, $guildId),
             $payload
