@@ -28,6 +28,7 @@ class Settings {
         'google_cse_api_key',
         'telegram_bot_token',
         'telegram_secret_token',
+        'image_gemini_api_key',
         'pexels_api_key',
         'unsplash_api_key',
     ];
@@ -110,10 +111,25 @@ class Settings {
             80
         );
 
-        // Enqueue wp-api on our settings page (provides wpApiSettings).
+        // Enqueue admin assets on our settings page.
         add_action('admin_enqueue_scripts', function (string $current_hook) use ($hook): void {
             if ($current_hook === $hook) {
                 wp_enqueue_script('wp-api');
+                
+                wp_enqueue_style(
+                    'wpoc-admin-settings',
+                    WPOC_URL . 'assets/css/admin-settings.css',
+                    [],
+                    (string) filemtime(WPOC_PATH . 'assets/css/admin-settings.css')
+                );
+                
+                wp_enqueue_script(
+                    'wpoc-admin-settings',
+                    WPOC_URL . 'assets/js/admin-settings.js',
+                    ['wp-api'],
+                    (string) filemtime(WPOC_PATH . 'assets/js/admin-settings.js'),
+                    true
+                );
             }
         });
     }
@@ -351,9 +367,16 @@ class Settings {
         add_settings_field('image_gen_provider', __('AI Image Provider', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for' => 'image_gen_provider',
             'options'   => [
-                'gemini'      => 'Gemini Flash Image (uses Gemini API Key)',
-                'openai_dalle' => 'OpenAI DALL-E (uses OpenAI API Key)',
+                'gemini'      => 'Gemini Flash Image',
+                'openai_dalle' => 'OpenAI DALL-E',
             ],
+        ]);
+
+        // Gemini Image API Key.
+        add_settings_field('image_gemini_api_key', __('Gemini Image API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for'   => 'image_gemini_api_key',
+            'description' => __('Specific API Key for generating images via Gemini. Falls back to main Gemini key if empty.', 'open-claw'),
+            'data-image-provider' => 'gemini',
         ]);
 
         // DALL-E Model.
@@ -363,6 +386,7 @@ class Settings {
                 'dall-e-3' => 'DALL-E 3 (Best quality)',
                 'dall-e-2' => 'DALL-E 2 (Faster, cheaper)',
             ],
+            'data-image-provider' => 'openai_dalle',
         ]);
 
         // Pexels API Key.
@@ -399,6 +423,7 @@ class Settings {
             'max_iterations'            => 10,
             'image_gen_enabled'         => false,
             'image_gen_provider'        => 'gemini',
+            'image_gemini_api_key'      => '',
             'dalle_model'               => 'dall-e-3',
             'pexels_api_key'            => '',
             'unsplash_api_key'          => '',
@@ -412,30 +437,31 @@ class Settings {
     public function sanitize_settings(array $input): array {
         $sanitized = [
             'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini', 'cloudflare'], true) ? $input['llm_provider'] : 'openai',
-            'openai_api_key'            => sanitize_text_field($input['openai_api_key'] ?? ''),
+            'openai_api_key'            => trim(wp_unslash((string) ($input['openai_api_key'] ?? ''))),
             'openai_model'              => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
-            'anthropic_api_key'         => sanitize_text_field($input['anthropic_api_key'] ?? ''),
+            'anthropic_api_key'         => trim(wp_unslash((string) ($input['anthropic_api_key'] ?? ''))),
             'anthropic_model'           => sanitize_text_field($input['anthropic_model'] ?? 'claude-sonnet-4-20250514'),
-            'gemini_api_key'            => sanitize_text_field($input['gemini_api_key'] ?? ''),
-            'gemini_api_key_2'          => sanitize_text_field($input['gemini_api_key_2'] ?? ''),
-            'gemini_api_key_3'          => sanitize_text_field($input['gemini_api_key_3'] ?? ''),
-            'gemini_api_key_4'          => sanitize_text_field($input['gemini_api_key_4'] ?? ''),
-            'gemini_api_key_5'          => sanitize_text_field($input['gemini_api_key_5'] ?? ''),
+            'gemini_api_key'            => trim(wp_unslash((string) ($input['gemini_api_key'] ?? ''))),
+            'gemini_api_key_2'          => trim(wp_unslash((string) ($input['gemini_api_key_2'] ?? ''))),
+            'gemini_api_key_3'          => trim(wp_unslash((string) ($input['gemini_api_key_3'] ?? ''))),
+            'gemini_api_key_4'          => trim(wp_unslash((string) ($input['gemini_api_key_4'] ?? ''))),
+            'gemini_api_key_5'          => trim(wp_unslash((string) ($input['gemini_api_key_5'] ?? ''))),
             'gemini_model'              => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.5-flash'),
             'cloudflare_account_id'     => sanitize_text_field($input['cloudflare_account_id'] ?? ''),
-            'cloudflare_api_token'      => sanitize_text_field($input['cloudflare_api_token'] ?? ''),
+            'cloudflare_api_token'      => trim(wp_unslash((string) ($input['cloudflare_api_token'] ?? ''))),
             'cloudflare_model'          => sanitize_text_field($input['cloudflare_model'] ?? '@cf/qwen/qwen2.5-72b-instruct'),
-            'google_cse_api_key'        => sanitize_text_field($input['google_cse_api_key'] ?? ''),
+            'google_cse_api_key'        => trim(wp_unslash((string) ($input['google_cse_api_key'] ?? ''))),
             'google_cse_cx'             => sanitize_text_field($input['google_cse_cx'] ?? ''),
             'max_iterations'            => max(1, min(20, absint($input['max_iterations'] ?? 10))),
             'image_gen_enabled'         => ! empty($input['image_gen_enabled']),
             'image_gen_provider'        => in_array($input['image_gen_provider'] ?? '', ['gemini', 'openai_dalle'], true) ? $input['image_gen_provider'] : 'gemini',
+            'image_gemini_api_key'      => trim(wp_unslash((string) ($input['image_gemini_api_key'] ?? ''))),
             'dalle_model'               => in_array($input['dalle_model'] ?? '', ['dall-e-3', 'dall-e-2'], true) ? $input['dalle_model'] : 'dall-e-3',
-            'pexels_api_key'            => sanitize_text_field($input['pexels_api_key'] ?? ''),
-            'unsplash_api_key'          => sanitize_text_field($input['unsplash_api_key'] ?? ''),
+            'pexels_api_key'            => trim(wp_unslash((string) ($input['pexels_api_key'] ?? ''))),
+            'unsplash_api_key'          => trim(wp_unslash((string) ($input['unsplash_api_key'] ?? ''))),
             'telegram_enabled'          => ! empty($input['telegram_enabled']),
-            'telegram_bot_token'        => sanitize_text_field($input['telegram_bot_token'] ?? ''),
-            'telegram_secret_token'     => sanitize_text_field($input['telegram_secret_token'] ?? ''),
+            'telegram_bot_token'        => trim(wp_unslash((string) ($input['telegram_bot_token'] ?? ''))),
+            'telegram_secret_token'     => trim(wp_unslash((string) ($input['telegram_secret_token'] ?? ''))),
             'telegram_allowed_chat_ids' => sanitize_text_field($input['telegram_allowed_chat_ids'] ?? ''),
         ];
 
@@ -495,48 +521,6 @@ class Settings {
             </form>
         </div>
 
-        <style>
-            .wpoc-tabs { margin-bottom: 0; }
-            .wpoc-tab-content { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 20px 10px; }
-            .wpoc-tab-content .form-table { margin-top: 0; }
-        </style>
-
-        <script>
-        (function() {
-            // Tab switching.
-            document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(tab) {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(t) { t.classList.remove('nav-tab-active'); });
-                    document.querySelectorAll('.wpoc-tab-content').forEach(function(c) { c.style.display = 'none'; });
-                    this.classList.add('nav-tab-active');
-                    document.getElementById(this.getAttribute('data-tab')).style.display = '';
-                });
-            });
-
-            // Provider field toggle (LLM tab).
-            var providerSelect = document.getElementById('llm_provider');
-            if (!providerSelect) return;
-
-            var providers = ['openai', 'anthropic', 'gemini', 'cloudflare'];
-            providers.forEach(function(p) {
-                document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
-                    var tr = el.closest('tr');
-                    if (tr) tr.setAttribute('data-provider', p);
-                });
-            });
-
-            function toggleProviderFields() {
-                var selected = providerSelect.value;
-                document.querySelectorAll('tr[data-provider]').forEach(function(row) {
-                    row.style.display = row.getAttribute('data-provider') === selected ? '' : 'none';
-                });
-            }
-
-            providerSelect.addEventListener('change', toggleProviderFields);
-            toggleProviderFields();
-        })();
-        </script>
         <?php
     }
 
@@ -546,6 +530,7 @@ class Settings {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
         $providerClass = ! empty($args['data-provider']) ? ' wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <select id="<?php echo esc_attr($args['label_for']); ?>"
                 name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
@@ -563,6 +548,7 @@ class Settings {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
         $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <input type="text"
                id="<?php echo esc_attr($args['label_for']); ?>"
@@ -578,6 +564,7 @@ class Settings {
         $options = self::get_decrypted_settings();
         $value   = $options[$args['label_for']] ?? '';
         $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <input type="password"
                id="<?php echo esc_attr($args['label_for']); ?>"
@@ -639,100 +626,7 @@ class Settings {
             <?php esc_html_e('Remove Webhook', 'open-claw'); ?>
         </button>
         <span id="wpoc-telegram-status" style="margin-left: 10px;"></span>
-        <p class="description"><?php esc_html_e('Save settings first, then register the webhook.', 'open-claw'); ?></p>
-        <script>
-        (function() {
-            function telegramApi(action) {
-                return fetch(wpApiSettings.root + 'open-claw/v1/telegram/setup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': wpApiSettings.nonce
-                    },
-                    body: JSON.stringify({ action: action })
-                }).then(function(r) { return r.json(); });
-            }
-
-            function telegramSetup(action) {
-                var status = document.getElementById('wpoc-telegram-status');
-                status.textContent = 'Processing...';
-                status.style.color = '#666';
-                telegramApi(action).then(function(data) {
-                    status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
-                    status.style.color = data.success ? 'green' : 'red';
-                    setTimeout(loadStatus, 1000);
-                }).catch(function() {
-                    status.textContent = 'Request failed.';
-                    status.style.color = 'red';
-                });
-            }
-
-            function loadStatus() {
-                var infoBox  = document.getElementById('wpoc-telegram-info');
-                var badge    = document.getElementById('wpoc-tg-badge');
-                var botName  = document.getElementById('wpoc-tg-bot');
-                var details  = document.getElementById('wpoc-tg-details');
-                var errorDiv = document.getElementById('wpoc-tg-error');
-
-                telegramApi('status').then(function(data) {
-                    infoBox.style.display = 'block';
-
-                    if (!data.success) {
-                        badge.textContent = '❌ Error';
-                        badge.style.background = '#d63638';
-                        details.textContent = data.message || 'Cannot reach Telegram API.';
-                        return;
-                    }
-
-                    if (data.bot_username) {
-                        botName.textContent = '@' + data.bot_username;
-                    }
-
-                    if (data.status === 'connected') {
-                        badge.textContent = '✅ Connected';
-                        badge.style.background = '#00a32a';
-                        details.innerHTML = 'Webhook: <code style="font-size:11px;">' + data.webhook_url + '</code>';
-                        if (data.pending_count > 0) {
-                            details.innerHTML += ' (' + data.pending_count + ' pending)';
-                        }
-                        errorDiv.style.display = 'none';
-                    } else if (data.status === 'error') {
-                        badge.textContent = '⚠️ Error';
-                        badge.style.background = '#dba617';
-                        details.innerHTML = 'Webhook: <code style="font-size:11px;">' + data.webhook_url + '</code>';
-                        errorDiv.style.display = 'block';
-                        errorDiv.textContent = '⚠ Last error: ' + data.last_error;
-                    } else {
-                        badge.textContent = '🔌 Disconnected';
-                        badge.style.background = '#787c82';
-                        details.textContent = 'No webhook registered. Click "Register Webhook" to connect.';
-                        errorDiv.style.display = 'none';
-                    }
-                }).catch(function() {
-                    infoBox.style.display = 'block';
-                    badge.textContent = '❓ Unknown';
-                    badge.style.background = '#787c82';
-                    details.textContent = 'Could not check status.';
-                });
-            }
-
-            var regBtn = document.getElementById('wpoc-telegram-register');
-            var rmBtn  = document.getElementById('wpoc-telegram-remove');
-            if (regBtn) regBtn.addEventListener('click', function() { telegramSetup('register'); });
-            if (rmBtn)  rmBtn.addEventListener('click', function() { telegramSetup('remove'); });
-
-            // Load status after wp-api script is ready.
-            if (typeof wpApiSettings !== 'undefined') {
-                loadStatus();
-            } else {
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (typeof wpApiSettings !== 'undefined') {
-                        loadStatus();
-                    }
-                });
-            }
-        })();
-        </script>
+        <p class="description"><?php esc_html_e('Enter your Bot Token, then click Register Webhook to connect.', 'open-claw'); ?></p>
         <?php
     }
 }

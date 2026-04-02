@@ -128,7 +128,7 @@ class ImageService {
      * @return array{data: string, mime: string}|null
      */
     private function generateWithGemini(string $prompt, array $settings): ?array {
-        $api_key = $settings['gemini_api_key'] ?? '';
+        $api_key = $settings['image_gemini_api_key'] ?? $settings['gemini_api_key'] ?? '';
         if (empty($api_key)) {
             return null;
         }
