@@ -160,6 +160,15 @@ class TelegramClient {
     }
 
     /**
+     * Get current webhook info from Telegram.
+     *
+     * @return array|false
+     */
+    public function getWebhookInfo() {
+        return $this->request('getWebhookInfo');
+    }
+
+    /**
      * Get basic bot info (for validation).
      *
      * @return array|false

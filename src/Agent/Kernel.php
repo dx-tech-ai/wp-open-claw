@@ -10,6 +10,7 @@ use OpenClaw\LLM\ClientInterface;
 use OpenClaw\LLM\OpenAIClient;
 use OpenClaw\LLM\AnthropicClient;
 use OpenClaw\LLM\GeminiClient;
+use OpenClaw\LLM\CloudflareClient;
 use OpenClaw\Tools\Manager;
 use OpenClaw\Actions\ContentTool;
 use OpenClaw\Actions\SystemTool;
@@ -32,9 +33,11 @@ use OpenClaw\Actions\ReportTool;
 class Kernel {
 
     private ClientInterface $llm;
+    private ?ClientInterface $fallbackLlm = null;
     private Manager $tools;
     private ContextProvider $context;
     private int $maxIterations;
+    private bool $usingFallback = false;
 
     private const MAX_MESSAGE_LENGTH = 10000;
     private const MAX_HISTORY_MESSAGES = 50;
@@ -57,9 +60,17 @@ class Kernel {
             case 'gemini':
                 $this->llm = new GeminiClient();
                 break;
+            case 'cloudflare':
+                $this->llm = new CloudflareClient();
+                break;
             default:
                 $this->llm = new OpenAIClient();
                 break;
+        }
+
+        // Setup Cloudflare as fallback if primary is Gemini and Cloudflare is configured.
+        if ($provider !== 'cloudflare' && ! empty($settings['cloudflare_account_id']) && ! empty($settings['cloudflare_api_token'])) {
+            $this->fallbackLlm = new CloudflareClient();
         }
 
         $this->maxIterations = absint($settings['max_iterations'] ?? 10);
@@ -96,7 +107,7 @@ class Kernel {
      * @param  string $userMessage  The user's command/request.
      * @return array<int, array{type: string, content: mixed}>
      */
-    public function handle(string $userMessage): array {
+    public function handle(string $userMessage, ?callable $onStep = null): array {
         $steps = [];
 
         if (mb_strlen($userMessage) > self::MAX_MESSAGE_LENGTH) {
@@ -127,29 +138,44 @@ class Kernel {
         $emptyRetries = 0;
 
         for ($i = 0; $i < $this->maxIterations; $i++) {
-            $steps[] = [
+            $step = [
                 'type'    => 'thinking',
                 'content' => sprintf('Iteration %d: Analyzing and planning...', $i + 1),
             ];
+            $steps[] = $step;
+            if ($onStep) $onStep($step);
 
             // Call LLM with tools.
             $response = $this->llm->chat($this->messages, $this->tools->getSchemas());
 
-            // Handle API errors.
+            // Handle API errors — attempt failover to Cloudflare on rate limit.
             if (! empty($response['error'])) {
-                $steps[] = [
+                if ($this->tryFailover($response)) {
+                    $step = [
+                        'type'    => 'thinking',
+                        'content' => '⚡ Primary AI hit rate limit. Switching to Cloudflare Workers AI...',
+                    ];
+                    $steps[] = $step;
+                    if ($onStep) $onStep($step);
+                    continue;
+                }
+                $step = [
                     'type'    => 'error',
                     'content' => $response['message'] ?? 'LLM request failed.',
                 ];
+                $steps[] = $step;
+                if ($onStep) $onStep($step);
                 break;
             }
 
             // Detect truncated response (hit token limit).
             if (($response['finish_reason'] ?? '') === 'length') {
-                $steps[] = [
+                $step = [
                     'type'    => 'thinking',
                     'content' => 'Response was truncated due to token limit. Requesting continuation...',
                 ];
+                $steps[] = $step;
+                if ($onStep) $onStep($step);
 
                 // Add partial content if any.
                 if (! empty($response['content'])) {
@@ -169,10 +195,12 @@ class Kernel {
 
             // If LLM returns text content (final response or intermediate thought).
             if (! empty($response['content']) && empty($response['tool_calls'])) {
-                $steps[] = [
+                $step = [
                     'type'    => 'response',
                     'content' => $response['content'],
                 ];
+                $steps[] = $step;
+                if ($onStep) $onStep($step);
                 break;
             }
 
@@ -180,7 +208,7 @@ class Kernel {
             if (! empty($response['tool_calls'])) {
                 $emptyRetries = 0; // Reset empty counter on successful tool call.
 
-                $result = $this->processToolCalls($response, $steps);
+                $result = $this->processToolCalls($response, $steps, $onStep);
                 if ($result === 'pause') {
                     return $steps;
                 }
@@ -190,10 +218,12 @@ class Kernel {
             // No content and no tool calls — attempt recovery.
             $emptyRetries++;
             if ($emptyRetries <= 1) {
-                $steps[] = [
+                $step = [
                     'type'    => 'thinking',
                     'content' => 'LLM returned empty response. Attempting recovery...',
                 ];
+                $steps[] = $step;
+                if ($onStep) $onStep($step);
                 $this->messages[] = [
                     'role'    => 'user',
                     'content' => 'You stopped without providing a final answer. Please review the conversation and provide your complete response now. If the task is too complex, explain what you can do and suggest how to break it into smaller steps.',
@@ -202,7 +232,7 @@ class Kernel {
             }
 
             // Recovery failed — provide friendly error.
-            $steps[] = [
+            $step = [
                 'type'    => 'response',
                 'content' => '⚠️ Xin lỗi, tôi gặp khó khăn khi xử lý yêu cầu này. '
                     . 'Yêu cầu có thể quá phức tạp để xử lý trong một lần. '
@@ -211,17 +241,21 @@ class Kernel {
                     . "2. **Đơn giản hóa** — bớt điều kiện hoặc giảm độ dài yêu cầu.\n"
                     . "3. **Thử lại** — đôi khi chạy lại sẽ cho kết quả tốt hơn.",
             ];
+            $steps[] = $step;
+            if ($onStep) $onStep($step);
             break;
         }
 
         // Max iterations exhausted without a response.
         $lastStep = end($steps);
         if ($lastStep && $lastStep['type'] === 'thinking') {
-            $steps[] = [
+            $step = [
                 'type'    => 'response',
                 'content' => '⚠️ Tác vụ quá phức tạp, tôi đã xử lý qua ' . $this->maxIterations
                     . ' bước nhưng chưa hoàn thành. Hãy thử chia nhỏ yêu cầu để tôi xử lý từng phần.',
             ];
+            $steps[] = $step;
+            if ($onStep) $onStep($step);
         }
 
         return $steps;
@@ -295,6 +329,13 @@ class Kernel {
             $response = $this->llm->chat($this->messages, $this->tools->getSchemas());
 
             if (! empty($response['error'])) {
+                if ($this->tryFailover($response)) {
+                    $steps[] = [
+                        'type'    => 'thinking',
+                        'content' => '⚡ Primary AI hit rate limit. Switching to Cloudflare Workers AI...',
+                    ];
+                    continue;
+                }
                 $steps[] = [
                     'type'    => 'error',
                     'content' => $response['message'] ?? 'LLM request failed.',
@@ -374,7 +415,7 @@ class Kernel {
      * @param  array &$steps   Steps array (passed by reference to append).
      * @return string|null     'pause' if waiting for confirmation, null otherwise.
      */
-    private function processToolCalls(array $response, array &$steps): ?string {
+    private function processToolCalls(array $response, array &$steps, ?callable $onStep = null): ?string {
         $assistantMessage = [
             'role'       => 'assistant',
             'content'    => $response['content'] ?? null,
@@ -391,13 +432,15 @@ class Kernel {
                 ],
             ];
 
-            $steps[] = [
+            $step = [
                 'type'    => 'tool_call',
                 'content' => [
                     'name'      => $toolCall['name'],
                     'arguments' => $toolCall['arguments'],
                 ],
             ];
+            $steps[] = $step;
+            if ($onStep) $onStep($step);
 
             // Dispatch the tool.
             $observation = $this->tools->dispatch($toolCall['name'], $toolCall['arguments']);
@@ -410,7 +453,7 @@ class Kernel {
                     'tool_call_id' => $toolCall['id'],
                 ];
 
-                $steps[] = [
+                $step = [
                     'type'    => 'confirmation',
                     'content' => [
                         'action_id'  => $actionId,
@@ -419,6 +462,8 @@ class Kernel {
                         'message'    => $observation['message'],
                     ],
                 ];
+                $steps[] = $step;
+                if ($onStep) $onStep($step);
 
                 $this->messages[] = $assistantMessage;
                 $this->messages[] = [
@@ -434,11 +479,12 @@ class Kernel {
                 return 'pause';
             }
 
-            // Read-only tool: add observation.
-            $steps[] = [
+            $step = [
                 'type'    => 'observation',
                 'content' => $observation,
             ];
+            $steps[] = $step;
+            if ($onStep) $onStep($step);
 
             $this->messages[] = $assistantMessage;
             $this->messages[] = [
@@ -519,6 +565,32 @@ class Kernel {
         $recentMsgs  = array_slice($this->messages, -$keepCount);
 
         $this->messages = array_merge([$systemMsg], $recentMsgs);
+    }
+
+    /**
+     * Attempt failover to Cloudflare when primary LLM hits rate limit.
+     *
+     * @return bool True if failover succeeded and loop should continue.
+     */
+    private function tryFailover(array $response): bool {
+        if ($this->usingFallback || ! $this->fallbackLlm) {
+            return false;
+        }
+
+        $code = $response['error_code'] ?? 0;
+        $msg  = $response['message'] ?? '';
+        $isRateLimit = $code === 429
+            || stripos($msg, 'quota') !== false
+            || stripos($msg, 'rate limit') !== false
+            || stripos($msg, 'exceeded') !== false;
+
+        if (! $isRateLimit) {
+            return false;
+        }
+
+        $this->llm = $this->fallbackLlm;
+        $this->usingFallback = true;
+        return true;
     }
 
     /**

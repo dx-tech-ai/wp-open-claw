@@ -20,9 +20,17 @@ class Settings {
         'openai_api_key',
         'anthropic_api_key',
         'gemini_api_key',
+        'gemini_api_key_2',
+        'gemini_api_key_3',
+        'gemini_api_key_4',
+        'gemini_api_key_5',
+        'cloudflare_api_token',
         'google_cse_api_key',
         'telegram_bot_token',
         'telegram_secret_token',
+        'image_gemini_api_key',
+        'pexels_api_key',
+        'unsplash_api_key',
     ];
 
     /**
@@ -103,10 +111,25 @@ class Settings {
             80
         );
 
-        // Enqueue wp-api on our settings page (provides wpApiSettings).
+        // Enqueue admin assets on our settings page.
         add_action('admin_enqueue_scripts', function (string $current_hook) use ($hook): void {
             if ($current_hook === $hook) {
                 wp_enqueue_script('wp-api');
+                
+                wp_enqueue_style(
+                    'wpoc-admin-settings',
+                    WPOC_URL . 'assets/css/admin-settings.css',
+                    [],
+                    (string) filemtime(WPOC_PATH . 'assets/css/admin-settings.css')
+                );
+                
+                wp_enqueue_script(
+                    'wpoc-admin-settings',
+                    WPOC_URL . 'assets/js/admin-settings.js',
+                    ['wp-api'],
+                    (string) filemtime(WPOC_PATH . 'assets/js/admin-settings.js'),
+                    true
+                );
             }
         });
     }
@@ -152,6 +175,16 @@ class Settings {
             self::PAGE_SLUG . '_agent'
         );
 
+        // Image Generation Section.
+        add_settings_section(
+            'wpoc_image',
+            __('Image Generation', 'open-claw'),
+            function () {
+                echo '<p>' . esc_html__('Auto-generate or fetch thumbnail images for blog posts. AI Generation → Stock Photo (Pexels/Unsplash) → Leave empty.', 'open-claw') . '</p>';
+            },
+            self::PAGE_SLUG . '_image'
+        );
+
         // Telegram Section.
         add_settings_section(
             'wpoc_telegram',
@@ -173,6 +206,7 @@ class Settings {
                 'openai'    => 'OpenAI',
                 'gemini'    => 'Google Gemini (AI Studio)',
                 'anthropic' => 'Anthropic (Claude)',
+                'cloudflare' => 'Cloudflare Workers AI (Free)',
             ],
         ]);
 
@@ -212,9 +246,33 @@ class Settings {
         ]);
 
         // Google Gemini API Key.
-        add_settings_field('gemini_api_key', __('Google AI Studio API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key', __('Google AI Studio API Key 1', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key',
             'description' => __('Get your free key at aistudio.google.com', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_2', __('API Key 2 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_2',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_3', __('API Key 3 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_3',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_4', __('API Key 4 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_4',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'data-provider' => 'gemini',
+        ]);
+
+        add_settings_field('gemini_api_key_5', __('API Key 5 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'gemini_api_key_5',
+            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
             'data-provider' => 'gemini',
         ]);
 
@@ -222,12 +280,38 @@ class Settings {
         add_settings_field('gemini_model', __('Gemini Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_model',
             'options'   => [
-                'gemini-2.5-flash'                => 'Gemini 2.5 Flash (Free)',
-                'gemini-2.5-flash-lite-preview-06-17' => 'Gemini 2.5 Flash Lite (Free)',
-                'gemini-2.5-pro-preview-05-06'    => 'Gemini 2.5 Pro Preview',
-                'gemini-2.0-flash-lite'           => 'Gemini 2.0 Flash Lite',
+                'gemini-2.5-flash'      => 'Gemini 2.5 Flash (Free)',
+                'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash Lite (Free)',
+                'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
+                'gemini-3-flash-preview'       => 'Gemini 3 Flash (Preview)',
+                'gemini-3.1-pro-preview'       => 'Gemini 3.1 Pro (Preview)',
             ],
             'data-provider' => 'gemini',
+        ]);
+
+        // Cloudflare Account ID.
+        add_settings_field('cloudflare_account_id', __('Cloudflare Account ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_account_id',
+            'description' => __('Find in Cloudflare Dashboard → Workers & Pages → Account ID.', 'open-claw'),
+            'data-provider' => 'cloudflare',
+        ]);
+
+        // Cloudflare API Token.
+        add_settings_field('cloudflare_api_token', __('Cloudflare API Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_api_token',
+            'description' => __('Create at dash.cloudflare.com/profile/api-tokens with Workers AI permission.', 'open-claw'),
+            'data-provider' => 'cloudflare',
+        ]);
+
+        // Cloudflare Model.
+        add_settings_field('cloudflare_model', __('Cloudflare Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+            'label_for' => 'cloudflare_model',
+            'options'   => [
+                '@cf/qwen/qwen2.5-72b-instruct'                  => 'Qwen 2.5 72B (Best Vietnamese)',
+                '@cf/google/gemma-3-12b-it'                      => 'Gemma 3 12B (Fast, multilingual)',
+                '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b'   => 'DeepSeek R1 32B (Reasoning)',
+            ],
+            'data-provider' => 'cloudflare',
         ]);
 
         // Google CSE API Key.
@@ -270,6 +354,52 @@ class Settings {
 
         // Webhook Setup Button.
         add_settings_field('telegram_webhook', __('Webhook', 'open-claw'), [$this, 'render_telegram_webhook_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram');
+
+        // --- Image Generation Fields ---
+
+        // Image Gen Enabled.
+        add_settings_field('image_gen_enabled', __('Enable AI Image', 'open-claw'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for'   => 'image_gen_enabled',
+            'description' => __('Auto-generate thumbnail using AI when creating blog posts.', 'open-claw'),
+        ]);
+
+        // Image Gen Provider.
+        add_settings_field('image_gen_provider', __('AI Image Provider', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for' => 'image_gen_provider',
+            'options'   => [
+                'gemini'      => 'Gemini Flash Image',
+                'openai_dalle' => 'OpenAI DALL-E',
+            ],
+        ]);
+
+        // Gemini Image API Key.
+        add_settings_field('image_gemini_api_key', __('Gemini Image API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for'   => 'image_gemini_api_key',
+            'description' => __('Specific API Key for generating images via Gemini. Falls back to main Gemini key if empty.', 'open-claw'),
+            'data-image-provider' => 'gemini',
+        ]);
+
+        // DALL-E Model.
+        add_settings_field('dalle_model', __('DALL-E Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for' => 'dalle_model',
+            'options'   => [
+                'dall-e-3' => 'DALL-E 3 (Best quality)',
+                'dall-e-2' => 'DALL-E 2 (Faster, cheaper)',
+            ],
+            'data-image-provider' => 'openai_dalle',
+        ]);
+
+        // Pexels API Key.
+        add_settings_field('pexels_api_key', __('Pexels API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for'   => 'pexels_api_key',
+            'description' => __('Free API key from pexels.com — used as fallback stock photo source.', 'open-claw'),
+        ]);
+
+        // Unsplash API Key.
+        add_settings_field('unsplash_api_key', __('Unsplash Access Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+            'label_for'   => 'unsplash_api_key',
+            'description' => __('Free Access Key from unsplash.com/developers — secondary stock photo fallback.', 'open-claw'),
+        ]);
     }
 
     private function get_defaults(): array {
@@ -280,10 +410,23 @@ class Settings {
             'anthropic_api_key'         => '',
             'anthropic_model'           => 'claude-sonnet-4-20250514',
             'gemini_api_key'            => '',
+            'gemini_api_key_2'          => '',
+            'gemini_api_key_3'          => '',
+            'gemini_api_key_4'          => '',
+            'gemini_api_key_5'          => '',
             'gemini_model'              => 'gemini-2.5-flash',
+            'cloudflare_account_id'     => '',
+            'cloudflare_api_token'      => '',
+            'cloudflare_model'          => '@cf/qwen/qwen2.5-72b-instruct',
             'google_cse_api_key'        => '',
             'google_cse_cx'             => '',
             'max_iterations'            => 10,
+            'image_gen_enabled'         => false,
+            'image_gen_provider'        => 'gemini',
+            'image_gemini_api_key'      => '',
+            'dalle_model'               => 'dall-e-3',
+            'pexels_api_key'            => '',
+            'unsplash_api_key'          => '',
             'telegram_enabled'          => false,
             'telegram_bot_token'        => '',
             'telegram_secret_token'     => '',
@@ -293,19 +436,32 @@ class Settings {
 
     public function sanitize_settings(array $input): array {
         $sanitized = [
-            'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['llm_provider'] : 'openai',
-            'openai_api_key'            => sanitize_text_field($input['openai_api_key'] ?? ''),
+            'llm_provider'              => in_array($input['llm_provider'] ?? '', ['openai', 'anthropic', 'gemini', 'cloudflare'], true) ? $input['llm_provider'] : 'openai',
+            'openai_api_key'            => trim(wp_unslash((string) ($input['openai_api_key'] ?? ''))),
             'openai_model'              => sanitize_text_field($input['openai_model'] ?? 'gpt-4o'),
-            'anthropic_api_key'         => sanitize_text_field($input['anthropic_api_key'] ?? ''),
+            'anthropic_api_key'         => trim(wp_unslash((string) ($input['anthropic_api_key'] ?? ''))),
             'anthropic_model'           => sanitize_text_field($input['anthropic_model'] ?? 'claude-sonnet-4-20250514'),
-            'gemini_api_key'            => sanitize_text_field($input['gemini_api_key'] ?? ''),
-            'gemini_model'              => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.0-flash'),
-            'google_cse_api_key'        => sanitize_text_field($input['google_cse_api_key'] ?? ''),
+            'gemini_api_key'            => trim(wp_unslash((string) ($input['gemini_api_key'] ?? ''))),
+            'gemini_api_key_2'          => trim(wp_unslash((string) ($input['gemini_api_key_2'] ?? ''))),
+            'gemini_api_key_3'          => trim(wp_unslash((string) ($input['gemini_api_key_3'] ?? ''))),
+            'gemini_api_key_4'          => trim(wp_unslash((string) ($input['gemini_api_key_4'] ?? ''))),
+            'gemini_api_key_5'          => trim(wp_unslash((string) ($input['gemini_api_key_5'] ?? ''))),
+            'gemini_model'              => sanitize_text_field($input['gemini_model'] ?? 'gemini-2.5-flash'),
+            'cloudflare_account_id'     => sanitize_text_field($input['cloudflare_account_id'] ?? ''),
+            'cloudflare_api_token'      => trim(wp_unslash((string) ($input['cloudflare_api_token'] ?? ''))),
+            'cloudflare_model'          => sanitize_text_field($input['cloudflare_model'] ?? '@cf/qwen/qwen2.5-72b-instruct'),
+            'google_cse_api_key'        => trim(wp_unslash((string) ($input['google_cse_api_key'] ?? ''))),
             'google_cse_cx'             => sanitize_text_field($input['google_cse_cx'] ?? ''),
             'max_iterations'            => max(1, min(20, absint($input['max_iterations'] ?? 10))),
+            'image_gen_enabled'         => ! empty($input['image_gen_enabled']),
+            'image_gen_provider'        => in_array($input['image_gen_provider'] ?? '', ['gemini', 'openai_dalle'], true) ? $input['image_gen_provider'] : 'gemini',
+            'image_gemini_api_key'      => trim(wp_unslash((string) ($input['image_gemini_api_key'] ?? ''))),
+            'dalle_model'               => in_array($input['dalle_model'] ?? '', ['dall-e-3', 'dall-e-2'], true) ? $input['dalle_model'] : 'dall-e-3',
+            'pexels_api_key'            => trim(wp_unslash((string) ($input['pexels_api_key'] ?? ''))),
+            'unsplash_api_key'          => trim(wp_unslash((string) ($input['unsplash_api_key'] ?? ''))),
             'telegram_enabled'          => ! empty($input['telegram_enabled']),
-            'telegram_bot_token'        => sanitize_text_field($input['telegram_bot_token'] ?? ''),
-            'telegram_secret_token'     => sanitize_text_field($input['telegram_secret_token'] ?? ''),
+            'telegram_bot_token'        => trim(wp_unslash((string) ($input['telegram_bot_token'] ?? ''))),
+            'telegram_secret_token'     => trim(wp_unslash((string) ($input['telegram_secret_token'] ?? ''))),
             'telegram_allowed_chat_ids' => sanitize_text_field($input['telegram_allowed_chat_ids'] ?? ''),
         ];
 
@@ -334,12 +490,13 @@ class Settings {
             'llm'      => __('AI Provider', 'open-claw'),
             'search'   => __('Web Research', 'open-claw'),
             'agent'    => __('Agent', 'open-claw'),
+            'image'    => __('Image', 'open-claw'),
             'telegram' => __('Telegram', 'open-claw'),
         ];
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?> ⚡</h1>
-            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G anywhere in admin to open the Command Palette.', 'open-claw'); ?></p>
+            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G, Ctrl+I, or Ctrl+Shift+K anywhere in admin to open the Command Palette.', 'open-claw'); ?></p>
 
             <nav class="nav-tab-wrapper wpoc-tabs">
                 <?php foreach ($tabs as $key => $label) : ?>
@@ -364,48 +521,6 @@ class Settings {
             </form>
         </div>
 
-        <style>
-            .wpoc-tabs { margin-bottom: 0; }
-            .wpoc-tab-content { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 20px 10px; }
-            .wpoc-tab-content .form-table { margin-top: 0; }
-        </style>
-
-        <script>
-        (function() {
-            // Tab switching.
-            document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(tab) {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(t) { t.classList.remove('nav-tab-active'); });
-                    document.querySelectorAll('.wpoc-tab-content').forEach(function(c) { c.style.display = 'none'; });
-                    this.classList.add('nav-tab-active');
-                    document.getElementById(this.getAttribute('data-tab')).style.display = '';
-                });
-            });
-
-            // Provider field toggle (LLM tab).
-            var providerSelect = document.getElementById('llm_provider');
-            if (!providerSelect) return;
-
-            var providers = ['openai', 'anthropic', 'gemini'];
-            providers.forEach(function(p) {
-                document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
-                    var tr = el.closest('tr');
-                    if (tr) tr.setAttribute('data-provider', p);
-                });
-            });
-
-            function toggleProviderFields() {
-                var selected = providerSelect.value;
-                document.querySelectorAll('tr[data-provider]').forEach(function(row) {
-                    row.style.display = row.getAttribute('data-provider') === selected ? '' : 'none';
-                });
-            }
-
-            providerSelect.addEventListener('change', toggleProviderFields);
-            toggleProviderFields();
-        })();
-        </script>
         <?php
     }
 
@@ -415,6 +530,7 @@ class Settings {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
         $providerClass = ! empty($args['data-provider']) ? ' wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <select id="<?php echo esc_attr($args['label_for']); ?>"
                 name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
@@ -431,12 +547,14 @@ class Settings {
     public function render_text_field(array $args): void {
         $options = get_option(self::OPTION_NAME, $this->get_defaults());
         $value   = $options[$args['label_for']] ?? '';
+        $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <input type="text"
                id="<?php echo esc_attr($args['label_for']); ?>"
                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
                value="<?php echo esc_attr($value); ?>"
-               class="regular-text" />
+               class="regular-text <?php echo esc_attr($providerClass); ?>" />
         <?php if (! empty($args['description'])) : ?>
             <p class="description"><?php echo esc_html($args['description']); ?></p>
         <?php endif;
@@ -446,6 +564,7 @@ class Settings {
         $options = self::get_decrypted_settings();
         $value   = $options[$args['label_for']] ?? '';
         $providerClass = ! empty($args['data-provider']) ? 'wpoc-provider-' . esc_attr($args['data-provider']) : '';
+        $providerClass .= ! empty($args['data-image-provider']) ? ' wpoc-image-provider-' . esc_attr($args['data-image-provider']) : '';
         ?>
         <input type="password"
                id="<?php echo esc_attr($args['label_for']); ?>"
@@ -492,6 +611,14 @@ class Settings {
 
     public function render_telegram_webhook_field(): void {
         ?>
+        <div id="wpoc-telegram-info" style="margin-bottom: 12px; padding: 10px 14px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; display: none;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span id="wpoc-tg-badge" style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; color: #fff;">...</span>
+                <strong id="wpoc-tg-bot" style="font-size: 13px;"></strong>
+            </div>
+            <div id="wpoc-tg-details" style="font-size: 12px; color: #666;"></div>
+            <div id="wpoc-tg-error" style="font-size: 12px; color: #d63638; margin-top: 4px; display: none;"></div>
+        </div>
         <button type="button" id="wpoc-telegram-register" class="button button-primary">
             <?php esc_html_e('Register Webhook', 'open-claw'); ?>
         </button>
@@ -499,36 +626,7 @@ class Settings {
             <?php esc_html_e('Remove Webhook', 'open-claw'); ?>
         </button>
         <span id="wpoc-telegram-status" style="margin-left: 10px;"></span>
-        <p class="description"><?php esc_html_e('Save settings first, then register the webhook.', 'open-claw'); ?></p>
-        <script>
-        (function() {
-            function telegramSetup(action) {
-                var status = document.getElementById('wpoc-telegram-status');
-                status.textContent = 'Processing...';
-                fetch(wpApiSettings.root + 'open-claw/v1/telegram/setup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': wpApiSettings.nonce
-                    },
-                    body: JSON.stringify({ action: action })
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
-                    status.style.color = data.success ? 'green' : 'red';
-                })
-                .catch(function() {
-                    status.textContent = 'Request failed.';
-                    status.style.color = 'red';
-                });
-            }
-            var regBtn = document.getElementById('wpoc-telegram-register');
-            var rmBtn  = document.getElementById('wpoc-telegram-remove');
-            if (regBtn) regBtn.addEventListener('click', function() { telegramSetup('register'); });
-            if (rmBtn)  rmBtn.addEventListener('click', function() { telegramSetup('remove'); });
-        })();
-        </script>
+        <p class="description"><?php esc_html_e('Enter your Bot Token, then click Register Webhook to connect.', 'open-claw'); ?></p>
         <?php
     }
 }

@@ -48,8 +48,13 @@ class TelegramController {
                     'type'              => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
                     'validate_callback' => function ($value) {
-                        return in_array($value, ['register', 'remove'], true);
+                        return in_array($value, ['register', 'remove', 'status'], true);
                     },
+                ],
+                'bot_token' => [
+                    'required'          => false,
+                    'type'              => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
             ],
         ]);
@@ -100,7 +105,40 @@ class TelegramController {
         // Handle /start command.
         if ($text === '/start') {
             $client = new TelegramClient();
-            $client->sendMessage($chat_id, "🤖 *Open Claw Agent*\n\nGửi tin nhắn để bắt đầu điều khiển WordPress của bạn.\n\n*Commands:*\n/start — Hiển thị trợ giúp\n/reset — Xóa session hiện tại");
+            $help  = "🤖 *Open Claw Agent*\n\n";
+            $help .= "AI trợ lý giúp bạn quản lý WordPress qua Telegram.\n";
+            $help .= "Chỉ cần gõ yêu cầu bằng ngôn ngữ tự nhiên.\n\n";
+
+            $help .= "📝 *Bài viết & Trang*\n";
+            $help .= "• _Liệt kê 5 bài viết mới nhất_\n";
+            $help .= "• _Tạo bài viết về chủ đề marketing_\n";
+            $help .= "• _Cập nhật tiêu đề bài viết ID 123_\n\n";
+
+            $help .= "🛍 *Sản phẩm & Đơn hàng*\n";
+            $help .= "• _Xem danh sách sản phẩm đang bán_\n";
+            $help .= "• _Kiểm tra đơn hàng mới hôm nay_\n";
+            $help .= "• _Thống kê doanh thu tháng này_\n\n";
+
+            $help .= "📊 *Báo cáo & Phân tích*\n";
+            $help .= "• _Thống kê tổng quan website_\n";
+            $help .= "• _Báo cáo top sản phẩm bán chạy_\n";
+            $help .= "• _Phân tích lượt truy cập tuần qua_\n\n";
+
+            $help .= "🔧 *Hệ thống*\n";
+            $help .= "• _Kiểm tra trạng thái website_\n";
+            $help .= "• _Xem danh sách plugin đang hoạt động_\n\n";
+
+            $help .= "🌐 *Nghiên cứu web*\n";
+            $help .= "• _Tìm hiểu xu hướng SEO 2026_\n";
+            $help .= "• _Nghiên cứu đối thủ cạnh tranh_\n\n";
+
+            $help .= "*Commands:*\n";
+            $help .= "/start — Hiển thị trợ giúp\n";
+            $help .= "/reset — Xóa session, bắt đầu hội thoại mới\n\n";
+
+            $help .= "💡 *Mẹo:* Agent sẽ xin xác nhận trước khi thực hiện các thay đổi quan trọng (tạo, sửa, xóa).";
+
+            $client->sendMessage($chat_id, $help);
             return;
         }
 
@@ -120,46 +158,63 @@ class TelegramController {
         // Set current user to admin for Kernel context.
         wp_set_current_user(1);
 
-        // Create Kernel and restore session.
-        $kernel     = new Kernel();
-        $session_id = $this->getOrCreateSessionId($chat_id);
-        $session    = get_transient($this->sessionKey($chat_id));
-
-        if ($session) {
-            $kernel->setMessages($session['messages'] ?? []);
-            $kernel->setPendingActions($session['pending_actions'] ?? []);
+        // Extend time limit for LLM calls.
+        if (function_exists('set_time_limit')) {
+            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+            set_time_limit(120);
         }
 
-        // Send "typing" indicator.
         $client = new TelegramClient();
 
-        // Run the ReAct loop.
-        $steps = $kernel->handle($text);
+        try {
+            // Create Kernel and restore session.
+            $kernel     = new Kernel();
+            $session_id = $this->getOrCreateSessionId($chat_id);
+            $session    = get_transient($this->sessionKey($chat_id));
 
-        // Save session.
-        set_transient($this->sessionKey($chat_id), [
-            'messages'        => $kernel->getMessages(),
-            'pending_actions' => $kernel->getPendingActions(),
-            'session_id'      => $session_id,
-        ], HOUR_IN_SECONDS);
+            if ($session) {
+                $kernel->setMessages($session['messages'] ?? []);
+                $kernel->setPendingActions($session['pending_actions'] ?? []);
+            }
 
-        // Check for confirmation steps.
-        $confirmation = StepFormatter::findConfirmation($steps);
+            // Run the ReAct loop.
+            $steps = $kernel->handle($text);
 
-        // Send formatted text messages (non-confirmation steps).
-        $messages = StepFormatter::format($steps);
-        foreach ($messages as $msg) {
-            $client->sendMessage($chat_id, $msg);
-        }
+            // Save session.
+            set_transient($this->sessionKey($chat_id), [
+                'messages'        => $kernel->getMessages(),
+                'pending_actions' => $kernel->getPendingActions(),
+                'session_id'      => $session_id,
+            ], HOUR_IN_SECONDS);
 
-        // Send confirmation card if needed.
-        if ($confirmation) {
-            $cd = $confirmation['content'] ?? $confirmation;
-            $client->sendConfirmationCard(
+            // Check for confirmation steps.
+            $confirmation = StepFormatter::findConfirmation($steps);
+
+            // Send formatted text messages (non-confirmation steps).
+            $messages = StepFormatter::format($steps);
+            foreach ($messages as $msg) {
+                $client->sendMessage($chat_id, $msg);
+            }
+
+            // Send confirmation card if needed.
+            if ($confirmation) {
+                $cd = $confirmation['content'] ?? $confirmation;
+                $client->sendConfirmationCard(
+                    $chat_id,
+                    $cd['action_id'] ?? '',
+                    $cd['tool_name'] ?? 'unknown',
+                    $cd['params'] ?? []
+                );
+            }
+        } catch (\Throwable $e) {
+            // Log the error.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('[OpenClaw Telegram] Handler error: ' . $e->getMessage());
+
+            // Notify user via Telegram.
+            $client->sendMessage(
                 $chat_id,
-                $cd['action_id'] ?? '',
-                $cd['tool_name'] ?? 'unknown',
-                $cd['params'] ?? []
+                "⚠️ Đã xảy ra lỗi khi xử lý yêu cầu:\n`" . $e->getMessage() . "`\n\nVui lòng thử lại hoặc dùng /reset để bắt đầu lại."
             );
         }
     }
@@ -250,9 +305,11 @@ class TelegramController {
      * Handle webhook setup (register/remove).
      */
     public function handle_setup(WP_REST_Request $request): WP_REST_Response {
-        $action   = $request->get_param('action');
-        $settings = \OpenClaw\Admin\Settings::get_decrypted_settings();
-        $token    = $settings['telegram_bot_token'] ?? '';
+        $action    = $request->get_param('action');
+        $new_token = $request->get_param('bot_token') ?? '';
+        $settings  = \OpenClaw\Admin\Settings::get_decrypted_settings();
+        
+        $token = !empty($new_token) ? $new_token : ($settings['telegram_bot_token'] ?? '');
 
         if (empty($token)) {
             return new WP_REST_Response([
@@ -263,16 +320,61 @@ class TelegramController {
 
         $client = new TelegramClient($token);
 
+        // Status check.
+        if ($action === 'status') {
+            $botInfo     = $client->getMe();
+            $webhookInfo = $client->getWebhookInfo();
+
+            if (! $botInfo || ! $webhookInfo) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Cannot connect to Telegram API. Check Bot Token.',
+                    'status'  => 'error',
+                ]);
+            }
+
+            $bot      = $botInfo['result'] ?? [];
+            $webhook  = $webhookInfo['result'] ?? [];
+            $url      = $webhook['url'] ?? '';
+            $hasError = ! empty($webhook['last_error_message']);
+
+            return new WP_REST_Response([
+                'success'       => true,
+                'status'        => empty($url) ? 'disconnected' : ($hasError ? 'error' : 'connected'),
+                'bot_username'  => $bot['username'] ?? '',
+                'webhook_url'   => $url,
+                'pending_count' => $webhook['pending_update_count'] ?? 0,
+                'last_error'    => $webhook['last_error_message'] ?? '',
+                'last_error_at' => $webhook['last_error_date'] ?? 0,
+            ]);
+        }
+
         if ($action === 'register') {
             $secret      = $settings['telegram_secret_token'] ?? '';
             $webhook_url = rest_url(self::NAMESPACE . '/telegram/webhook');
+            $raw_settings = get_option('wpoc_settings', []);
+            $settings_changed = false;
 
-            // Generate secret token if not set.
-            if (empty($secret)) {
-                $secret = wp_generate_password(64, false);
-                $raw    = get_option('wpoc_settings', []);
-                $raw['telegram_secret_token'] = \OpenClaw\Admin\Settings::encrypt_value($secret);
-                update_option('wpoc_settings', $raw);
+            // Generate secret token if not set or contains invalid characters.
+            // Telegram only allows: A-Z, a-z, 0-9, _ and - in secret_token.
+            if (empty($secret) || preg_match('/[^A-Za-z0-9_\-]/', $secret)) {
+                $chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+                $secret = '';
+                for ($i = 0; $i < 64; $i++) {
+                    $secret .= $chars[random_int(0, strlen($chars) - 1)];
+                }
+                $raw_settings['telegram_secret_token'] = \OpenClaw\Admin\Settings::encrypt_value($secret);
+                $settings_changed = true;
+            }
+
+            // Save the new bot token if it was provided
+            if (!empty($new_token)) {
+                $raw_settings['telegram_bot_token'] = \OpenClaw\Admin\Settings::encrypt_value($new_token);
+                $settings_changed = true;
+            }
+            
+            if ($settings_changed) {
+                update_option('wpoc_settings', $raw_settings);
             }
 
             $result = $client->setWebhook($webhook_url, $secret);

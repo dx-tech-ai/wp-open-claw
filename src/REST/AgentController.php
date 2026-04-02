@@ -120,10 +120,14 @@ class AgentController {
 
     /**
      * Handle a chat message — runs the ReAct loop.
+     * Returns JSON with all steps. For SSE streaming, use the admin-ajax endpoint.
      */
     public function handle_chat(WP_REST_Request $request): WP_REST_Response {
         $message    = $request->get_param('message');
-        $session_id = $request->get_param('session_id') ?: wp_generate_uuid4();
+        $session_id = $request->get_param('session_id');
+        if (empty($session_id) || $session_id === 'null') {
+            $session_id = wp_generate_uuid4();
+        }
 
         if (! $this->validate_session_id($session_id)) {
             return new WP_REST_Response([
@@ -134,17 +138,20 @@ class AgentController {
 
         $kernel = new Kernel();
 
-        // Restore session if exists (bound to user).
+        // Restore session if exists.
         $session = get_transient($this->session_key($session_id));
         if ($session) {
             $kernel->setMessages($session['messages'] ?? []);
             $kernel->setPendingActions($session['pending_actions'] ?? []);
         }
 
-        // Run the ReAct loop.
+        if (function_exists('set_time_limit')) {
+            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+            set_time_limit(300);
+        }
+
         $steps = $kernel->handle($message);
 
-        // Save session state (bound to user).
         set_transient($this->session_key($session_id), [
             'messages'        => $kernel->getMessages(),
             'pending_actions' => $kernel->getPendingActions(),

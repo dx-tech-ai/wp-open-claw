@@ -16,11 +16,11 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 
 = Key Features =
 
-* 🤖 **Command Palette** — Open with `Ctrl+G`, modern glassmorphism chat interface
+* 🤖 **Command Palette** — Open with `Ctrl+I`, `Ctrl+G` or `Ctrl+Shift+K`, modern glassmorphism chat interface
 * 🧠 **ReAct Loop** — Agent reasons, selects tools, executes, observes results, and continues
 * ✅ **Confirm Before Executing** — Data-changing actions require user confirmation
 * 🔗 **Chain Actions** — Automatically performs sequential actions (e.g., create category then create multiple products)
-* 🔌 **Multi LLM Provider** — Supports OpenAI (GPT-4o), Google Gemini (2.5 Flash/Pro), Anthropic Claude (Sonnet 4)
+* 🔌 **Multi LLM Provider** — Supports OpenAI (GPT-4o), Google Gemini (2.5 Flash/Pro), Anthropic Claude (Sonnet 4), Cloudflare Workers AI (Free)
 * 🛒 **WooCommerce Ready** — Auto-detects WooCommerce and activates product, order, and customer management tools
 * 💾 **Session Persistence** — Saves session state to resume after action confirmation
 * 🔍 **Web Research** — Built-in web search via DuckDuckGo (free) or Google Custom Search
@@ -87,7 +87,7 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 3. Choose the downloaded ZIP file and click Install Now
 4. Activate the plugin
 5. Go to **Open Claw** in the admin menu → configure your API key
-6. Press `Ctrl+G` on any admin page to start using the agent
+6. Press `Ctrl+I` or `Ctrl+G` on any admin page to start using the agent
 
 **Method 2: Manual Upload**
 1. Download and extract the ZIP to `/wp-content/plugins/`
@@ -97,7 +97,7 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 == Configuration ==
 
 = LLM Provider =
-Choose one of three providers:
+Choose one of four providers:
 
 * **Google Gemini (AI Studio)** — Free tier available at [aistudio.google.com](https://aistudio.google.com/apikey)
   * Models: Gemini 2.5 Flash (Free), Gemini 2.5 Flash Lite (Free), Gemini 2.5 Pro Preview, Gemini 2.0 Flash Lite
@@ -105,6 +105,8 @@ Choose one of three providers:
   * Models: GPT-4o, GPT-4o Mini, GPT-4 Turbo
 * **Anthropic** — API key required from [console.anthropic.com](https://console.anthropic.com)
   * Models: Claude Sonnet 4, Claude 3.5 Haiku
+* **Cloudflare Workers AI** — API token required from [dash.cloudflare.com](https://dash.cloudflare.com)
+  * Models: Qwen 2.5 72B (Best Vietnamese), Gemma 3 12B, DeepSeek R1 32B
 
 = Web Search =
 * Default: **DuckDuckGo** (free, no API key required)
@@ -155,6 +157,12 @@ When Anthropic is selected as the AI provider, user prompts and WordPress site c
 * Terms of Use: [https://www.anthropic.com/terms](https://www.anthropic.com/terms)
 * Privacy Policy: [https://www.anthropic.com/privacy](https://www.anthropic.com/privacy)
 
+= Cloudflare Workers AI =
+When Cloudflare is selected as the AI provider, user prompts and WordPress site context are sent to the Cloudflare API.
+* Service URL: [https://api.cloudflare.com](https://api.cloudflare.com)
+* Terms of Use: [https://www.cloudflare.com/website-terms/](https://www.cloudflare.com/website-terms/)
+* Privacy Policy: [https://www.cloudflare.com/privacypolicy/](https://www.cloudflare.com/privacypolicy/)
+
 = DuckDuckGo Search =
 The web research tool uses DuckDuckGo's HTML search as the default search provider. Search queries are sent when the AI agent decides to perform web research.
 * Service URL: [https://html.duckduckgo.com](https://html.duckduckgo.com)
@@ -166,6 +174,18 @@ When configured, the web research tool can use Google Custom Search API instead 
 * Service URL: [https://www.googleapis.com/customsearch](https://www.googleapis.com/customsearch)
 * Terms of Use: [https://developers.google.com/terms](https://developers.google.com/terms)
 * Privacy Policy: [https://policies.google.com/privacy](https://policies.google.com/privacy)
+
+= Pexels API =
+When Pexels API key is configured, the agent may search and download free stock photos from Pexels for blog post thumbnails. Search queries (based on your post titles or keywords) are sent to the Pexels API.
+* Service URL: [https://api.pexels.com](https://api.pexels.com)
+* Terms of Use: [https://www.pexels.com/terms-of-service/](https://www.pexels.com/terms-of-service/)
+* Privacy Policy: [https://www.pexels.com/privacy-policy/](https://www.pexels.com/privacy-policy/)
+
+= Unsplash API =
+When Unsplash API key is configured, the agent may search and download free stock photos from Unsplash for blog post thumbnails. Search queries (based on your post titles or keywords) are sent to the Unsplash API.
+* Service URL: [https://api.unsplash.com](https://api.unsplash.com)
+* Terms of Use: [https://unsplash.com/terms](https://unsplash.com/terms)
+* Privacy Policy: [https://unsplash.com/privacy](https://unsplash.com/privacy)
 
 = Telegram Bot API =
 When Telegram integration is enabled, the plugin sends messages to the Telegram Bot API to deliver responses and inline keyboards to the configured bot.
@@ -208,8 +228,9 @@ Yes! Enable Telegram integration in the settings, add your bot token and chat ID
 = 1.0.0 =
 * Initial release
 * 12 built-in tools (9 WordPress core + 3 WooCommerce)
-* Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
-* Command Palette UI with Ctrl+G shortcut
+* Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4), Cloudflare Workers AI
+* Gemini multi-key rotation and Cloudflare failover mode
+* Command Palette UI with Ctrl+I / Ctrl+G shortcuts
 * Telegram Bot integration with inline keyboard confirmations
 * Report & Analytics tool (dashboard, order/product/content reports)
 * Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)

@@ -435,7 +435,7 @@
                     <div class="hero-stat-label">Built-in Tools</div>
                 </div>
                 <div class="hero-stat">
-                    <div class="hero-stat-value gradient-text">3</div>
+                    <div class="hero-stat-value gradient-text">4</div>
                     <div class="hero-stat-label">LLM Providers</div>
                 </div>
                 <div class="hero-stat">
@@ -458,7 +458,7 @@
                     <span class="terminal-dot red"></span>
                     <span class="terminal-dot yellow"></span>
                     <span class="terminal-dot green"></span>
-                    <span class="terminal-title">Open Claw — Ctrl+G</span>
+                    <span class="terminal-title">Open Claw — Ctrl+I / Ctrl+G</span>
                 </div>
                 <div class="terminal-body" id="terminalBody">
                     <div class="terminal-line" style="animation-delay: 0.2s"><span class="prompt">You › </span><span class="cmd">Tạo danh mục Thời Trang rồi thêm 3 sản phẩm áo thun vào</span></div>
@@ -575,7 +575,7 @@
                  + <span class="hl2">ContextProvider</span> (auto site snapshot)
                           │
                           ▼
-              ┌─── <span class="hl">LLM Chat</span> (OpenAI / Gemini / Anthropic) ───┐
+              ┌─── <span class="hl">LLM Chat</span> (OpenAI / Gemini / Anthropic / Cloudflare) ───┐
               │                                                    │
               ▼                                                    ▼
       <span class="hl3">Text Response</span>                                    <span class="hl4">Tool Call</span>
@@ -623,6 +623,12 @@
                     <p class="provider-models">Claude Sonnet 4<br>Claude 3.5 Haiku</p>
                     <span class="provider-free no">Paid API</span>
                 </div>
+                <div class="provider-card reveal">
+                    <div class="provider-logo" style="background: rgba(245,158,11,0.1);">🟠</div>
+                    <h3>Cloudflare Workers</h3>
+                    <p class="provider-models">Qwen 2.5 72B · DeepSeek R1<br>Gemma 3 12B</p>
+                    <span class="provider-free yes">✓ Free Tier Available</span>
+                </div>
             </div>
         </div>
     </section>
@@ -653,7 +659,7 @@
                 <div class="install-step reveal">
                     <div class="install-step-num">4</div>
                     <h4>Launch!</h4>
-                    <p>Press <kbd>Ctrl+G</kbd> on any<br>admin page to start</p>
+                    <p>Press <kbd>Ctrl+I</kbd> or <kbd>Ctrl+G</kbd><br>on any admin page to start</p>
                 </div>
             </div>
             <div class="install-code reveal">
@@ -662,7 +668,7 @@
 <span class="hlg">$</span> git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 <span class="hlc"># Dependencies are included — no composer install needed!</span>
-<span class="hlc"># Just activate in WP Admin and press Ctrl+G</span></pre>
+<span class="hlc"># Just activate in WP Admin and press Ctrl+I or Ctrl+G</span></pre>
             </div>
         </div>
     </section>

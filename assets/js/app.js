@@ -64,7 +64,7 @@
         try {
             // Restore session ID.
             const savedSessionId = localStorage.getItem(KEY_SESSION_ID);
-            if (savedSessionId) {
+            if (savedSessionId && savedSessionId !== 'null') {
                 sessionId = savedSessionId;
             }
 
@@ -133,13 +133,26 @@
     }
 
     /* ------------------------------------------------------------------ */
-    /* Keyboard shortcut: Ctrl+G                                          */
+    /* Keyboard shortcuts                                                 */
     /* ------------------------------------------------------------------ */
     document.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && e.key === 'g') {
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+        // Supported shortcuts to toggle the palette:
+        // - Ctrl/Cmd + G
+        // - Ctrl/Cmd + I
+        // - Ctrl/Cmd + Shift + K
+        const isToggleKey = 
+            (modifier && e.key.toLowerCase() === 'g' && !e.shiftKey && !e.altKey) ||
+            (modifier && e.key.toLowerCase() === 'i' && !e.shiftKey && !e.altKey) ||
+            (modifier && e.shiftKey && e.key.toLowerCase() === 'k' && !e.altKey);
+            
+        if (isToggleKey) {
             e.preventDefault();
             togglePalette();
         }
+        
         if (e.key === 'Escape') {
             closePalette();
         }
@@ -218,7 +231,7 @@
                 <span class="wpoc-log-icon">❌</span>
                 <div class="wpoc-log-content">
                     ${escapeHtml(msg)}
-                    ${needsSettings ? '<br><a href="' + wpocData.adminUrl + 'admin.php?page=open-claw-settings" class="wpoc-settings-link">⚙️ Mở Cài đặt</a>' : ''}
+                    ${needsSettings ? '<br><a href="admin.php?page=wpoc-settings" class="wpoc-settings-link">⚙️ Mở Cài đặt</a>' : ''}
                 </div>
             `;
             log.appendChild(entry);
@@ -345,33 +358,60 @@
         addLogEntry('response', `You: ${message}`);
 
         try {
-            const res = await fetch(wpocData.restUrl + 'agent/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce':   wpocData.nonce,
-                },
-                body: JSON.stringify({
-                    message:    message,
-                    session_id: sessionId,
-                }),
-            });
-
-            const data = await res.json();
-
-            if (!data.success) {
-                addLogEntry('error', data.message || 'Request failed.');
-                return;
+            // Use admin-ajax.php for SSE streaming.
+            const formData = new FormData();
+            formData.append('action', 'wpoc_stream_chat');
+            formData.append('_nonce', wpocData.streamNonce);
+            formData.append('message', message);
+            if (sessionId && sessionId !== 'null') {
+                formData.append('session_id', sessionId);
             }
 
-            sessionId = data.session_id;
+            const res = await fetch(wpocData.streamUrl, {
+                method: 'POST',
+                body: formData,
+            });
 
-            // Process steps.
-            for (const step of data.steps || []) {
-                if (step.type === 'confirmation') {
-                    renderActionCard(step.content);
-                } else {
-                    addLogEntry(step.type, step.content);
+            const contentType = res.headers.get('content-type') || '';
+
+            if (contentType.includes('text/event-stream')) {
+                // Read SSE stream.
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+                        try {
+                            const step = JSON.parse(trimmed.substring(6));
+                            processStreamStep(step);
+                        } catch (e) {}
+                    }
+                }
+
+                // Process remaining buffer.
+                if (buffer.trim().startsWith('data: ')) {
+                    try {
+                        const step = JSON.parse(buffer.trim().substring(6));
+                        processStreamStep(step);
+                    } catch (e) {}
+                }
+            } else {
+                // JSON fallback (WordPress error or non-SSE response).
+                const data = await res.json();
+                if (data.success === false) {
+                    addLogEntry('error', data.data || 'Request failed.');
                 }
             }
 
@@ -382,6 +422,34 @@
             setStatus('Ready', false);
             sendBtn() && (sendBtn().disabled = false);
             saveState();
+        }
+    }
+
+    function processStreamStep(step) {
+        if (step.type === 'session') {
+            sessionId = step.session_id;
+            return;
+        }
+        if (step.type === 'done') {
+            sessionId = step.session_id || sessionId;
+            return;
+        }
+
+        // Update status bar with current step.
+        const statusMap = {
+            thinking:     '🧠 Thinking...',
+            tool_call:    '🔧 Calling tool...',
+            observation:  '👁️ Observing...',
+            response:     '✅ Done',
+            confirmation: '⏳ Waiting for approval...',
+            error:        '❌ Error',
+        };
+        setStatus(statusMap[step.type] || 'Processing...', step.type !== 'response' && step.type !== 'error');
+
+        if (step.type === 'confirmation') {
+            renderActionCard(step.content);
+        } else {
+            addLogEntry(step.type, step.content);
         }
     }
 

@@ -14,11 +14,12 @@
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| 🤖 **Command Palette** | Mở bằng `Ctrl+G`, giao diện chat hiện đại phong cách glassmorphism |
+| 🤖 **Command Palette** | Mở bằng `Ctrl+I`, `Ctrl+G` hoặc `Ctrl+Shift+K`, giao diện chat hiện đại phong cách glassmorphism |
 | 🧠 **ReAct Loop** | Agent tự suy luận, chọn tool, thực thi, quan sát kết quả và tiếp tục |
 | ✅ **Xác nhận trước khi thực thi** | Hành động thay đổi dữ liệu cần xác nhận từ người dùng |
 | 🔗 **Chain Actions** | Tự động thực hiện chuỗi hành động liên tiếp |
-| 🔌 **Đa LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) |
+| 🔌 **Đa LLM Provider** | OpenAI (GPT-4o) · Google Gemini (2.5 Flash/Pro) · Anthropic Claude (Sonnet 4) · Cloudflare Workers AI (Free) |
+| 🔄 **Multi-Key & Failover** | Gemini hỗ trợ tối đa 5 API keys xoay vòng + tự động failover sang Cloudflare khi hết quota |
 | 🛒 **WooCommerce Ready** | Tự động kích hoạt tool quản lý sản phẩm, đơn hàng, khách hàng |
 | 💾 **Session Persistence** | Lưu trạng thái phiên làm việc qua WordPress transients |
 | 🔍 **Web Research** | Tìm kiếm web trực tiếp (DuckDuckGo miễn phí hoặc Google CSE) |
@@ -73,8 +74,9 @@ wp-open-claw/
 │   ├── LLM/
 │   │   ├── ClientInterface.php
 │   │   ├── OpenAIClient.php
-│   │   ├── GeminiClient.php
-│   │   └── AnthropicClient.php
+│   │   ├── GeminiClient.php      # Multi-key rotation (5 keys)
+│   │   ├── AnthropicClient.php
+│   │   └── CloudflareClient.php  # Cloudflare Workers AI
 │   ├── REST/
 │   │   └── AgentController.php # REST API endpoints
 │   ├── Admin/
@@ -101,9 +103,11 @@ User Input → Kernel.handle()
     ↓
 System Prompt (+ ContextProvider snapshot)
     ↓
-LLM Chat (OpenAI / Gemini / Anthropic)
+LLM Chat (OpenAI / Gemini / Anthropic / Cloudflare)
     ↓
-┌─ Text Response → Return to user
+┌─ Rate Limit (429) → Failover to Cloudflare (if configured)
+│
+├─ Text Response → Return to user
 │
 └─ Tool Call → Manager.dispatch()
        ↓
@@ -122,7 +126,7 @@ LLM Chat (OpenAI / Gemini / Anthropic)
 2. Vào WP Admin → Plugins → Add New → Upload Plugin
 3. Chọn file ZIP vừa tải → Install Now → Activate
 4. Vào **Open Claw** → cấu hình API key
-5. Nhấn `Ctrl+G` để bắt đầu!
+5. Nhấn `Ctrl+I` hoặc `Ctrl+G` để bắt đầu!
 
 **Cách 2: Clone từ GitHub**
 ```bash
@@ -131,7 +135,7 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 # Kích hoạt plugin trong WP Admin → Plugins
 # Vào Open Claw → cấu hình API key
-# Nhấn Ctrl+G để bắt đầu!
+# Nhấn Ctrl+I hoặc Ctrl+G để bắt đầu!
 ```
 
 ## ⚙️ Cấu hình
@@ -140,9 +144,18 @@ git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 | Provider | Models | Free Tier | Lấy API Key |
 |----------|--------|-----------|-------------|
-| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview, 2.0 Flash Lite | ✅ Có | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Google Gemini** | Gemini 2.5 Flash, Flash Lite, 2.5 Pro Preview | ✅ Có (hỗ trợ 5 keys xoay vòng) | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Cloudflare Workers AI** | Qwen 2.5 72B, Gemma 3 12B, DeepSeek R1 32B | ✅ Có (generous free tier) | [dash.cloudflare.com](https://dash.cloudflare.com/profile/api-tokens) |
 | **OpenAI** | GPT-4o, GPT-4o Mini, GPT-4 Turbo | ❌ Không | [platform.openai.com](https://platform.openai.com) |
 | **Anthropic** | Claude Sonnet 4, Claude 3.5 Haiku | ❌ Không | [console.anthropic.com](https://console.anthropic.com) |
+
+### Gemini Multi-Key Rotation
+
+Để tránh rate limit trên free tier, bạn có thể cấu hình tối đa **5 API keys** từ Google AI Studio. Plugin sẽ tự động xoay vòng (round-robin) giữa các keys và retry khi gặp lỗi 429.
+
+### Cloudflare Failover
+
+Nếu bạn cấu hình Cloudflare Workers AI (Account ID + API Token), plugin sẽ **tự động chuyển sang Cloudflare** khi provider chính (Gemini/OpenAI/Anthropic) bị rate limit. Không cần chọn Cloudflare làm provider chính — chỉ cần điền thông tin là failover sẽ hoạt động.
 
 ### Web Search
 
@@ -239,12 +252,19 @@ Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng
 
 ## 📋 Changelog
 
+### 1.1.0
+
+- **Gemini Multi-Key Rotation**: Hỗ trợ tối đa 5 API keys xoay vòng, tự động retry khi gặp rate limit 429
+- **Cloudflare Workers AI**: Provider mới hoàn toàn miễn phí — Qwen 2.5 72B (viết tiếng Việt), Gemma 3 12B (nhanh), DeepSeek R1 32B (reasoning)
+- **Auto Failover**: Tự động chuyển sang Cloudflare khi provider chính hết quota
+- Fix: `render_text_field` hỗ trợ provider toggle CSS class
+
 ### 1.0.0
 
 - Initial release
 - 12 built-in tools (9 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
-- Command Palette UI with `Ctrl+G` shortcut
+- Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
 - Telegram Bot integration with inline keyboard confirmations
 - Report & Analytics tool (dashboard, order/product/content reports)
 - Tabbed settings UI (AI Provider, Web Research, Agent, Telegram)
