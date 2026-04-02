@@ -10,6 +10,7 @@ use OpenClaw\LLM\ClientInterface;
 use OpenClaw\LLM\OpenAIClient;
 use OpenClaw\LLM\AnthropicClient;
 use OpenClaw\LLM\GeminiClient;
+use OpenClaw\LLM\CloudflareClient;
 use OpenClaw\Tools\Manager;
 use OpenClaw\Actions\ContentTool;
 use OpenClaw\Actions\SystemTool;
@@ -32,9 +33,11 @@ use OpenClaw\Actions\ReportTool;
 class Kernel {
 
     private ClientInterface $llm;
+    private ?ClientInterface $fallbackLlm = null;
     private Manager $tools;
     private ContextProvider $context;
     private int $maxIterations;
+    private bool $usingFallback = false;
 
     private const MAX_MESSAGE_LENGTH = 10000;
     private const MAX_HISTORY_MESSAGES = 50;
@@ -57,9 +60,17 @@ class Kernel {
             case 'gemini':
                 $this->llm = new GeminiClient();
                 break;
+            case 'cloudflare':
+                $this->llm = new CloudflareClient();
+                break;
             default:
                 $this->llm = new OpenAIClient();
                 break;
+        }
+
+        // Setup Cloudflare as fallback if primary is Gemini and Cloudflare is configured.
+        if ($provider !== 'cloudflare' && ! empty($settings['cloudflare_account_id']) && ! empty($settings['cloudflare_api_token'])) {
+            $this->fallbackLlm = new CloudflareClient();
         }
 
         $this->maxIterations = absint($settings['max_iterations'] ?? 10);
@@ -137,8 +148,17 @@ class Kernel {
             // Call LLM with tools.
             $response = $this->llm->chat($this->messages, $this->tools->getSchemas());
 
-            // Handle API errors.
+            // Handle API errors — attempt failover to Cloudflare on rate limit.
             if (! empty($response['error'])) {
+                if ($this->tryFailover($response)) {
+                    $step = [
+                        'type'    => 'thinking',
+                        'content' => '⚡ Primary AI hit rate limit. Switching to Cloudflare Workers AI...',
+                    ];
+                    $steps[] = $step;
+                    if ($onStep) $onStep($step);
+                    continue;
+                }
                 $step = [
                     'type'    => 'error',
                     'content' => $response['message'] ?? 'LLM request failed.',
@@ -309,6 +329,13 @@ class Kernel {
             $response = $this->llm->chat($this->messages, $this->tools->getSchemas());
 
             if (! empty($response['error'])) {
+                if ($this->tryFailover($response)) {
+                    $steps[] = [
+                        'type'    => 'thinking',
+                        'content' => '⚡ Primary AI hit rate limit. Switching to Cloudflare Workers AI...',
+                    ];
+                    continue;
+                }
                 $steps[] = [
                     'type'    => 'error',
                     'content' => $response['message'] ?? 'LLM request failed.',
@@ -538,6 +565,32 @@ class Kernel {
         $recentMsgs  = array_slice($this->messages, -$keepCount);
 
         $this->messages = array_merge([$systemMsg], $recentMsgs);
+    }
+
+    /**
+     * Attempt failover to Cloudflare when primary LLM hits rate limit.
+     *
+     * @return bool True if failover succeeded and loop should continue.
+     */
+    private function tryFailover(array $response): bool {
+        if ($this->usingFallback || ! $this->fallbackLlm) {
+            return false;
+        }
+
+        $code = $response['error_code'] ?? 0;
+        $msg  = $response['message'] ?? '';
+        $isRateLimit = $code === 429
+            || stripos($msg, 'quota') !== false
+            || stripos($msg, 'rate limit') !== false
+            || stripos($msg, 'exceeded') !== false;
+
+        if (! $isRateLimit) {
+            return false;
+        }
+
+        $this->llm = $this->fallbackLlm;
+        $this->usingFallback = true;
+        return true;
     }
 
     /**

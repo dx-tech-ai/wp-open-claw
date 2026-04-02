@@ -19,20 +19,66 @@ class GeminiClient implements ClientInterface {
     use ErrorMapper;
 
     private const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
+    private const MAX_KEY_RETRIES = 5;
+    private const TRANSIENT_KEY = 'wpoc_gemini_key_index';
 
-    private string $apiKey;
+    private array $apiKeys;
     private string $model;
 
     public function __construct(?string $apiKey = null, ?string $model = null) {
-        $settings       = \OpenClaw\Admin\Settings::get_decrypted_settings();
-        $this->apiKey   = $apiKey ?? ($settings['gemini_api_key'] ?? '');
-        $this->model    = $model ?? ($settings['gemini_model'] ?? 'gemini-2.5-flash');
+        $settings     = \OpenClaw\Admin\Settings::get_decrypted_settings();
+        $this->model  = $model ?? ($settings['gemini_model'] ?? 'gemini-2.5-flash');
+
+        if ($apiKey) {
+            $this->apiKeys = [$apiKey];
+        } else {
+            $this->apiKeys = array_values(array_filter([
+                $settings['gemini_api_key'] ?? '',
+                $settings['gemini_api_key_2'] ?? '',
+                $settings['gemini_api_key_3'] ?? '',
+                $settings['gemini_api_key_4'] ?? '',
+                $settings['gemini_api_key_5'] ?? '',
+            ]));
+        }
+    }
+
+    private function getNextKey(): ?string {
+        if (empty($this->apiKeys)) {
+            return null;
+        }
+        $index = (int) get_transient(self::TRANSIENT_KEY);
+        $key   = $this->apiKeys[$index % count($this->apiKeys)];
+        set_transient(self::TRANSIENT_KEY, ($index + 1) % count($this->apiKeys), 3600);
+        return $key;
     }
 
     /**
      * @inheritDoc
      */
     public function chat(array $messages, array $tools = []): array {
+        $triedKeys = 0;
+        $maxRetries = min(self::MAX_KEY_RETRIES, count($this->apiKeys));
+
+        while ($triedKeys < $maxRetries) {
+            $apiKey = $this->getNextKey();
+            if (! $apiKey) {
+                return ['error' => true, 'message' => '🔑 No Gemini API key configured.'];
+            }
+
+            $result = $this->doChat($apiKey, $messages, $tools);
+
+            if (! empty($result['error']) && ($result['error_code'] ?? 0) === 429 && $triedKeys + 1 < $maxRetries) {
+                $triedKeys++;
+                continue;
+            }
+
+            return $result;
+        }
+
+        return ['error' => true, 'message' => '⚠️ All Gemini API keys have exceeded their rate limit. Please wait a few minutes and try again.'];
+    }
+
+    private function doChat(string $apiKey, array $messages, array $tools = []): array {
         $url = self::API_BASE . $this->model . ':generateContent';
 
         $body = [
@@ -60,7 +106,7 @@ class GeminiClient implements ClientInterface {
             'timeout' => 120,
             'headers' => [
                 'Content-Type'   => 'application/json',
-                'x-goog-api-key' => $this->apiKey,
+                'x-goog-api-key' => $apiKey,
             ],
             'body'    => wp_json_encode($body),
         ]);
