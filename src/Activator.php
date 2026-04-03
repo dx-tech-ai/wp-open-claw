@@ -60,6 +60,13 @@ class Activator {
                 'telegram_bot_token'        => '',
                 'telegram_secret_token'     => '',
                 'telegram_allowed_chat_ids' => '',
+                'discord_enabled'           => false,
+                'discord_bot_token'         => '',
+                'discord_application_id'    => '',
+                'discord_public_key'        => '',
+                'discord_guild_id'          => '',
+                'discord_allowed_channel_ids' => '',
+                'discord_allowed_user_ids'  => '',
             ]);
         }
     }

@@ -159,3 +159,115 @@
         });
     }
 })();
+
+// Discord logic
+(function() {
+    function discordApi(action) {
+        return fetch(wpApiSettings.root + 'open-claw/v1/discord/setup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': wpApiSettings.nonce
+            },
+            body: JSON.stringify({ action: action })
+        }).then(function(r) { return r.json(); });
+    }
+
+    function discordSetup(action) {
+        var status = document.getElementById('wpoc-discord-status');
+        if (!status) return;
+        status.textContent = 'Processing...';
+        status.style.color = '#666';
+        discordApi(action).then(function(data) {
+            status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
+            status.style.color = data.success ? 'green' : 'red';
+            setTimeout(loadStatus, 1000);
+        }).catch(function() {
+            status.textContent = 'Request failed.';
+            status.style.color = 'red';
+        });
+    }
+
+    function loadStatus() {
+        var infoBox = document.getElementById('wpoc-discord-info');
+        var badge   = document.getElementById('wpoc-dc-badge');
+        var botName = document.getElementById('wpoc-dc-bot');
+        var details = document.getElementById('wpoc-dc-details');
+
+        if (!infoBox) return; // Only process if we're on a page with discord settings
+
+        discordApi('status').then(function(data) {
+            infoBox.style.display = 'block';
+
+            if (!data.success) {
+                badge.textContent = 'ERROR';
+                badge.style.background = '#d63638';
+                details.textContent = data.message || 'Cannot read Discord status.';
+                return;
+            }
+
+            if (data.status === 'connected') {
+                badge.textContent = 'CONNECTED';
+                badge.style.background = '#00a32a';
+            } else {
+                badge.textContent = 'DISCONNECTED';
+                badge.style.background = '#787c82';
+            }
+
+            botName.textContent = data.bot_name ? ('@' + data.bot_name) : 'Bot not detected';
+            var commandText = data.command_registered ? 'registered' : 'not registered';
+            var scope = data.command_scope === 'guild' ? 'guild' : 'global';
+
+            // Clear previous content
+            while (details.firstChild) {
+                details.removeChild(details.firstChild);
+            }
+
+            // "Slash command is ..." line
+            var mainText = 'Slash command is ' + commandText + ' (' + scope + ' scope).';
+            details.appendChild(document.createTextNode(mainText));
+
+            // Interaction endpoint line (if present)
+            if (data.interaction_url) {
+                details.appendChild(document.createElement('br'));
+                details.appendChild(document.createTextNode('Interaction endpoint: '));
+                var endpointCode = document.createElement('code');
+                endpointCode.style.fontSize = '11px';
+                endpointCode.textContent = data.interaction_url;
+                details.appendChild(endpointCode);
+            }
+
+            // Guild ID line (if present)
+            if (data.guild_id) {
+                details.appendChild(document.createElement('br'));
+                details.appendChild(document.createTextNode('Guild ID: '));
+                var guildCode = document.createElement('code');
+                guildCode.style.fontSize = '11px';
+                guildCode.textContent = data.guild_id;
+                details.appendChild(guildCode);
+            }
+        }).catch(function() {
+            infoBox.style.display = 'block';
+            badge.textContent = 'UNKNOWN';
+            badge.style.background = '#787c82';
+            details.textContent = 'Could not check status.';
+        });
+    }
+
+    var regBtn = document.getElementById('wpoc-discord-register');
+    var rmBtn  = document.getElementById('wpoc-discord-remove');
+    if (regBtn) regBtn.addEventListener('click', function() { discordSetup('register'); });
+    if (rmBtn)  rmBtn.addEventListener('click', function() { discordSetup('remove'); });
+
+    if (typeof wpApiSettings !== 'undefined') {
+        if (document.getElementById('wpoc-discord-info')) {
+            loadStatus();
+        }
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof wpApiSettings !== 'undefined' && document.getElementById('wpoc-discord-info')) {
+                loadStatus();
+            }
+        });
+    }
+})();

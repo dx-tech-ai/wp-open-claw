@@ -74,6 +74,10 @@ function wpoc_init(): void {
         // Telegram webhook route.
         $telegram = new \OpenClaw\Telegram\TelegramController();
         $telegram->register_webhook_route();
+
+        // Discord interactions route.
+        $discord = new \OpenClaw\Discord\DiscordController();
+        $discord->register_routes();
     });
 }
 add_action('plugins_loaded', 'wpoc_init');

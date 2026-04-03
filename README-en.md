@@ -23,6 +23,7 @@
 | 🛒 **WooCommerce Ready** | Auto-activates product, order, and customer management tools |
 | 💾 **Session Persistence** | Saves session state via WordPress transients |
 | 🔍 **Web Research** | Direct web search (free DuckDuckGo or Google CSE) |
+| 💬 **Discord Bot** | Control WordPress from Discord slash commands with Approve/Reject buttons |
 
 ## 🛠️ 11 Built-in Tools
 
@@ -83,6 +84,10 @@ wp-open-claw/
 │       ├── ToolInterface.php
 │       ├── DynamicConfirmInterface.php
 │       └── Manager.php         # Tool registry & dispatcher
+│   ├── Discord/
+│   │   ├── DiscordController.php   # Discord interactions handler
+│   │   ├── DiscordClient.php       # Discord REST API client
+│   │   └── StepFormatter.php       # Format agent steps for Discord
 ├── assets/
 │   ├── css/
 │   └── js/
@@ -159,6 +164,28 @@ If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will
 
 - **Max Iterations**: Maximum ReAct loop iterations (1–20, default: 10)
 
+### Discord Bot
+
+1. Create an application in the Discord Developer Portal and add the bot to your server
+2. Copy the `Bot Token`, `Application ID`, and `Public Key`
+3. Open **Open Claw → Discord** in WordPress and fill in those values
+4. Add `Allowed Channel IDs` and `Allowed User IDs` to restrict where and who can run the bot
+5. Optionally add a `Guild ID` if you want faster slash command updates inside one Discord server
+6. Expose your WordPress site over HTTPS, preferably with `ngrok` for local testing, and set:
+   `https://your-domain/wp-json/open-claw/v1/discord/interactions`
+   as the `Interactions Endpoint URL` in the Discord Developer Portal
+7. Click **Register /openclaw Command**
+8. Run `/openclaw run` in an allowed Discord channel
+
+**Discord capabilities:**
+- `/openclaw` reuses the same Kernel as the admin chatbox and Telegram
+- Only users listed in `Allowed User IDs` can execute commands in approved channels
+- Supports `Guild ID` for faster guild-scoped command updates during setup
+- Discord receives a fast acknowledgement, then the bot posts results to the channel
+- Write actions render **Approve** / **Reject** buttons
+- Only the user who started the request can confirm it
+- Sessions are persisted per `channel + Discord user`
+
 ## 💡 Usage Examples
 
 ### WordPress
@@ -181,6 +208,15 @@ If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will
 "Update order #123 to completed status"
 "Find customers with email containing 'gmail'"
 "Show me the top 5 highest-spending customers"
+```
+
+### Discord
+
+```
+/openclaw run prompt: Show me site info
+/openclaw run prompt: Create a category called Discord Test
+/openclaw run prompt: Draft a post about WordPress performance
+/openclaw reset
 ```
 
 ## ❓ FAQ
@@ -225,6 +261,7 @@ Yes! The agent supports Chain Actions — after confirming one action, the agent
 - 11 built-in tools (8 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 - Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
+- Discord slash command integration with approval buttons
 - ReAct Loop engine with configurable max iterations
 - DuckDuckGo web search (free, no API key needed)
 - Dynamic Confirmation for mixed read/write tools
