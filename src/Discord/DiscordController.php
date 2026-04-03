@@ -14,12 +14,12 @@ use WP_REST_Response;
  * Discord interactions controller.
  *
  * Endpoints:
- *   POST /open-claw/v1/discord/interactions - Public Discord interaction webhook
- *   POST /open-claw/v1/discord/setup        - Admin setup actions
+ *   POST /dxtechai-claw-agent/v1/discord/interactions - Public Discord interaction webhook
+ *   POST /dxtechai-claw-agent/v1/discord/setup        - Admin setup actions
  */
 class DiscordController {
 
-    private const NAMESPACE = 'open-claw/v1';
+    private const NAMESPACE = 'dxtechai-claw-agent/v1';
     private const COMMAND_NAME = 'openclaw';
     private const MAX_CONTENT_LENGTH = 1900;
     private const ACK_FLAGS_EPHEMERAL = 64;
@@ -160,11 +160,11 @@ class DiscordController {
         $userId    = $this->extractUserId($payload);
 
         if (! $this->isAllowedChannel($channelId, $settings)) {
-            return $this->interactionMessage('This channel is not allowed for Open Claw.');
+            return $this->interactionMessage('This channel is not allowed for DXTechAI Claw Agent.');
         }
 
         if (! $this->isAllowedUser($userId, $settings)) {
-            return $this->interactionMessage('You are not allowed to use Open Claw in this Discord workspace.');
+            return $this->interactionMessage('You are not allowed to use DXTechAI Claw Agent in this Discord workspace.');
         }
 
         $commandName = (string) ($payload['data']['name'] ?? '');
@@ -192,7 +192,7 @@ class DiscordController {
         $this->sendImmediateResponse([
             'type' => 4,
             'data' => [
-                'content' => 'Open Claw is processing your request.',
+                'content' => 'DXTechAI Claw Agent is processing your request.',
                 'flags'   => self::ACK_FLAGS_EPHEMERAL,
             ],
         ]);
@@ -210,11 +210,11 @@ class DiscordController {
         $customId  = (string) ($payload['data']['custom_id'] ?? '');
 
         if (! $this->isAllowedChannel($channelId, $settings)) {
-            return $this->interactionMessage('This channel is not allowed for Open Claw.');
+            return $this->interactionMessage('This channel is not allowed for DXTechAI Claw Agent.');
         }
 
         if (! $this->isAllowedUser($userId, $settings)) {
-            return $this->interactionMessage('You are not allowed to use Open Claw in this Discord workspace.');
+            return $this->interactionMessage('You are not allowed to use DXTechAI Claw Agent in this Discord workspace.');
         }
 
         if (! preg_match('/^wpoc:(confirm|reject):([0-9a-f\-]{36}):([^:]+)$/i', $customId, $matches)) {

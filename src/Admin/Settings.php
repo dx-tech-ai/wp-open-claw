@@ -103,8 +103,8 @@ class Settings {
 
     public function add_menu_page(): void {
         $hook = add_menu_page(
-            __('Open Claw', 'open-claw'),
-            __('Open Claw', 'open-claw'),
+            __('DXTechAI Claw Agent', 'dxtechai-claw-agent'),
+            __('DXTechAI Claw Agent', 'dxtechai-claw-agent'),
             'manage_options',
             self::PAGE_SLUG,
             [$this, 'render_settings_page'],
@@ -149,9 +149,9 @@ class Settings {
         // LLM Provider Section.
         add_settings_section(
             'wpoc_llm',
-            __('LLM Configuration', 'open-claw'),
+            __('LLM Configuration', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Configure your AI provider and API credentials.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure your AI provider and API credentials.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_llm'
         );
@@ -159,9 +159,9 @@ class Settings {
         // Search API Section.
         add_settings_section(
             'wpoc_search',
-            __('Web Research (Google Custom Search)', 'open-claw'),
+            __('Web Research (Google Custom Search)', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Configure Google Custom Search for web research capabilities.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure Google Custom Search for web research capabilities.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_search'
         );
@@ -169,9 +169,9 @@ class Settings {
         // Agent Section.
         add_settings_section(
             'wpoc_agent',
-            __('Agent Settings', 'open-claw'),
+            __('Agent Settings', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Configure agent behavior.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Configure agent behavior.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_agent'
         );
@@ -179,9 +179,9 @@ class Settings {
         // Image Generation Section.
         add_settings_section(
             'wpoc_image',
-            __('Image Generation', 'open-claw'),
+            __('Image Generation', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Auto-generate or fetch thumbnail images for blog posts. AI Generation → Stock Photo (Pexels/Unsplash) → Leave empty.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Auto-generate or fetch thumbnail images for blog posts. AI Generation → Stock Photo (Pexels/Unsplash) → Leave empty.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_image'
         );
@@ -189,9 +189,9 @@ class Settings {
         // Telegram Section.
         add_settings_section(
             'wpoc_telegram',
-            __('Telegram Integration', 'open-claw'),
+            __('Telegram Integration', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Control Open Claw via Telegram Bot.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Control DXTechAI Claw Agent via Telegram Bot.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_telegram'
         );
@@ -199,9 +199,9 @@ class Settings {
         // Discord Section.
         add_settings_section(
             'wpoc_discord',
-            __('Discord Integration', 'open-claw'),
+            __('Discord Integration', 'dxtechai-claw-agent'),
             function () {
-                echo '<p>' . esc_html__('Control Open Claw via Discord slash commands and interaction buttons.', 'open-claw') . '</p>';
+                echo '<p>' . esc_html__('Control DXTechAI Claw Agent via Discord slash commands and interaction buttons.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_discord'
         );
@@ -211,7 +211,7 @@ class Settings {
 
     private function add_fields(): void {
         // LLM Provider.
-        add_settings_field('llm_provider', __('AI Provider', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('llm_provider', __('AI Provider', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'llm_provider',
             'options'   => [
                 'openai'    => 'OpenAI',
@@ -222,14 +222,14 @@ class Settings {
         ]);
 
         // OpenAI API Key.
-        add_settings_field('openai_api_key', __('OpenAI API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('openai_api_key', __('OpenAI API Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'openai_api_key',
-            'description' => __('Get your key at platform.openai.com', 'open-claw'),
+            'description' => __('Get your key at platform.openai.com', 'dxtechai-claw-agent'),
             'data-provider' => 'openai',
         ]);
 
         // OpenAI Model.
-        add_settings_field('openai_model', __('OpenAI Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('openai_model', __('OpenAI Model', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'openai_model',
             'options'   => [
                 'gpt-4o'         => 'GPT-4o',
@@ -240,14 +240,14 @@ class Settings {
         ]);
 
         // Anthropic API Key.
-        add_settings_field('anthropic_api_key', __('Anthropic API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('anthropic_api_key', __('Anthropic API Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'anthropic_api_key',
-            'description' => __('Get your key at console.anthropic.com', 'open-claw'),
+            'description' => __('Get your key at console.anthropic.com', 'dxtechai-claw-agent'),
             'data-provider' => 'anthropic',
         ]);
 
         // Anthropic Model.
-        add_settings_field('anthropic_model', __('Anthropic Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('anthropic_model', __('Anthropic Model', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'anthropic_model',
             'options'   => [
                 'claude-sonnet-4-20250514' => 'Claude Sonnet 4',
@@ -257,38 +257,38 @@ class Settings {
         ]);
 
         // Google Gemini API Key.
-        add_settings_field('gemini_api_key', __('Google AI Studio API Key 1', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key', __('Google AI Studio API Key 1', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key',
-            'description' => __('Get your free key at aistudio.google.com', 'open-claw'),
+            'description' => __('Get your free key at aistudio.google.com', 'dxtechai-claw-agent'),
             'data-provider' => 'gemini',
         ]);
 
-        add_settings_field('gemini_api_key_2', __('API Key 2 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key_2', __('API Key 2 (optional)', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key_2',
-            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'description' => __('Extra key for rate-limit rotation.', 'dxtechai-claw-agent'),
             'data-provider' => 'gemini',
         ]);
 
-        add_settings_field('gemini_api_key_3', __('API Key 3 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key_3', __('API Key 3 (optional)', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key_3',
-            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'description' => __('Extra key for rate-limit rotation.', 'dxtechai-claw-agent'),
             'data-provider' => 'gemini',
         ]);
 
-        add_settings_field('gemini_api_key_4', __('API Key 4 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key_4', __('API Key 4 (optional)', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key_4',
-            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'description' => __('Extra key for rate-limit rotation.', 'dxtechai-claw-agent'),
             'data-provider' => 'gemini',
         ]);
 
-        add_settings_field('gemini_api_key_5', __('API Key 5 (optional)', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_api_key_5', __('API Key 5 (optional)', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_api_key_5',
-            'description' => __('Extra key for rate-limit rotation.', 'open-claw'),
+            'description' => __('Extra key for rate-limit rotation.', 'dxtechai-claw-agent'),
             'data-provider' => 'gemini',
         ]);
 
         // Google Gemini Model.
-        add_settings_field('gemini_model', __('Gemini Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('gemini_model', __('Gemini Model', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'gemini_model',
             'options'   => [
                 'gemini-2.5-flash'      => 'Gemini 2.5 Flash (Free)',
@@ -301,21 +301,21 @@ class Settings {
         ]);
 
         // Cloudflare Account ID.
-        add_settings_field('cloudflare_account_id', __('Cloudflare Account ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('cloudflare_account_id', __('Cloudflare Account ID', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'cloudflare_account_id',
-            'description' => __('Find in Cloudflare Dashboard → Workers & Pages → Account ID.', 'open-claw'),
+            'description' => __('Find in Cloudflare Dashboard → Workers & Pages → Account ID.', 'dxtechai-claw-agent'),
             'data-provider' => 'cloudflare',
         ]);
 
         // Cloudflare API Token.
-        add_settings_field('cloudflare_api_token', __('Cloudflare API Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('cloudflare_api_token', __('Cloudflare API Token', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'cloudflare_api_token',
-            'description' => __('Create at dash.cloudflare.com/profile/api-tokens with Workers AI permission.', 'open-claw'),
+            'description' => __('Create at dash.cloudflare.com/profile/api-tokens with Workers AI permission.', 'dxtechai-claw-agent'),
             'data-provider' => 'cloudflare',
         ]);
 
         // Cloudflare Model.
-        add_settings_field('cloudflare_model', __('Cloudflare Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
+        add_settings_field('cloudflare_model', __('Cloudflare Model', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_llm', 'wpoc_llm', [
             'label_for' => 'cloudflare_model',
             'options'   => [
                 '@cf/qwen/qwen2.5-72b-instruct'                  => 'Qwen 2.5 72B (Best Vietnamese)',
@@ -326,101 +326,101 @@ class Settings {
         ]);
 
         // Google CSE API Key.
-        add_settings_field('google_cse_api_key', __('Google API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
+        add_settings_field('google_cse_api_key', __('Google API Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
             'label_for' => 'google_cse_api_key',
-            'description' => __('Google Cloud API key with Custom Search API enabled.', 'open-claw'),
+            'description' => __('Google Cloud API key with Custom Search API enabled.', 'dxtechai-claw-agent'),
         ]);
 
         // Google CSE CX.
-        add_settings_field('google_cse_cx', __('Search Engine ID (CX)', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
+        add_settings_field('google_cse_cx', __('Search Engine ID (CX)', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_search', 'wpoc_search', [
             'label_for' => 'google_cse_cx',
-            'description' => __('Your Custom Search Engine ID from cse.google.com', 'open-claw'),
+            'description' => __('Your Custom Search Engine ID from cse.google.com', 'dxtechai-claw-agent'),
         ]);
 
         // Max Iterations.
-        add_settings_field('max_iterations', __('Max Agent Iterations', 'open-claw'), [$this, 'render_number_field'], self::PAGE_SLUG . '_agent', 'wpoc_agent', [
+        add_settings_field('max_iterations', __('Max Agent Iterations', 'dxtechai-claw-agent'), [$this, 'render_number_field'], self::PAGE_SLUG . '_agent', 'wpoc_agent', [
             'label_for'   => 'max_iterations',
             'min'         => 1,
             'max'         => 20,
-            'description' => __('Maximum number of ReAct loop iterations (1-20).', 'open-claw'),
+            'description' => __('Maximum number of ReAct loop iterations (1-20).', 'dxtechai-claw-agent'),
         ]);
 
         // Telegram Enabled.
-        add_settings_field('telegram_enabled', __('Enable Telegram', 'open-claw'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+        add_settings_field('telegram_enabled', __('Enable Telegram', 'dxtechai-claw-agent'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
             'label_for'   => 'telegram_enabled',
-            'description' => __('Enable Telegram Bot integration.', 'open-claw'),
+            'description' => __('Enable Telegram Bot integration.', 'dxtechai-claw-agent'),
         ]);
 
         // Telegram Bot Token.
-        add_settings_field('telegram_bot_token', __('Bot Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+        add_settings_field('telegram_bot_token', __('Bot Token', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
             'label_for'   => 'telegram_bot_token',
-            'description' => __('Get from @BotFather on Telegram.', 'open-claw'),
+            'description' => __('Get from @BotFather on Telegram.', 'dxtechai-claw-agent'),
         ]);
 
         // Telegram Allowed Chat IDs.
-        add_settings_field('telegram_allowed_chat_ids', __('Allowed Chat IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
+        add_settings_field('telegram_allowed_chat_ids', __('Allowed Chat IDs', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
             'label_for'   => 'telegram_allowed_chat_ids',
-            'description' => __('Comma-separated Telegram chat IDs allowed to use the bot.', 'open-claw'),
+            'description' => __('Comma-separated Telegram chat IDs allowed to use the bot.', 'dxtechai-claw-agent'),
         ]);
 
         // Webhook Setup Button.
-        add_settings_field('telegram_webhook', __('Webhook', 'open-claw'), [$this, 'render_telegram_webhook_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram');
+        add_settings_field('telegram_webhook', __('Webhook', 'dxtechai-claw-agent'), [$this, 'render_telegram_webhook_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram');
 
         // Discord Enabled.
-        add_settings_field('discord_enabled', __('Enable Discord', 'open-claw'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_enabled', __('Enable Discord', 'dxtechai-claw-agent'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_enabled',
-            'description' => __('Enable Discord interactions integration.', 'open-claw'),
+            'description' => __('Enable Discord interactions integration.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Bot Token.
-        add_settings_field('discord_bot_token', __('Bot Token', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_bot_token', __('Bot Token', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_bot_token',
-            'description' => __('Bot token from Discord Developer Portal.', 'open-claw'),
+            'description' => __('Bot token from Discord Developer Portal.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Application ID.
-        add_settings_field('discord_application_id', __('Application ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_application_id', __('Application ID', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_application_id',
-            'description' => __('Discord application (client) ID.', 'open-claw'),
+            'description' => __('Discord application (client) ID.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Public Key.
-        add_settings_field('discord_public_key', __('Public Key', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_public_key', __('Public Key', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_public_key',
-            'description' => __('Discord interaction public key for request signature verification.', 'open-claw'),
+            'description' => __('Discord interaction public key for request signature verification.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Guild ID.
-        add_settings_field('discord_guild_id', __('Guild ID', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_guild_id', __('Guild ID', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_guild_id',
-            'description' => __('Optional Discord server (guild) ID. Use this for faster slash command updates during setup.', 'open-claw'),
+            'description' => __('Optional Discord server (guild) ID. Use this for faster slash command updates during setup.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Allowed Channels.
-        add_settings_field('discord_allowed_channel_ids', __('Allowed Channel IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_allowed_channel_ids', __('Allowed Channel IDs', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_allowed_channel_ids',
-            'description' => __('Comma-separated Discord channel IDs allowed to run Open Claw commands.', 'open-claw'),
+            'description' => __('Comma-separated Discord channel IDs allowed to run DXTechAI Claw Agent commands.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord Allowed Users.
-        add_settings_field('discord_allowed_user_ids', __('Allowed User IDs', 'open-claw'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
+        add_settings_field('discord_allowed_user_ids', __('Allowed User IDs', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord', [
             'label_for'   => 'discord_allowed_user_ids',
-            'description' => __('Comma-separated Discord user IDs allowed to execute commands in approved channels.', 'open-claw'),
+            'description' => __('Comma-separated Discord user IDs allowed to execute commands in approved channels.', 'dxtechai-claw-agent'),
         ]);
 
         // Discord command setup.
-        add_settings_field('discord_setup', __('Slash Command', 'open-claw'), [$this, 'render_discord_setup_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord');
+        add_settings_field('discord_setup', __('Slash Command', 'dxtechai-claw-agent'), [$this, 'render_discord_setup_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord');
 
         // --- Image Generation Fields ---
 
         // Image Gen Enabled.
-        add_settings_field('image_gen_enabled', __('Enable AI Image', 'open-claw'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('image_gen_enabled', __('Enable AI Image', 'dxtechai-claw-agent'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for'   => 'image_gen_enabled',
-            'description' => __('Auto-generate thumbnail using AI when creating blog posts.', 'open-claw'),
+            'description' => __('Auto-generate thumbnail using AI when creating blog posts.', 'dxtechai-claw-agent'),
         ]);
 
         // Image Gen Provider.
-        add_settings_field('image_gen_provider', __('AI Image Provider', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('image_gen_provider', __('AI Image Provider', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for' => 'image_gen_provider',
             'options'   => [
                 'gemini'      => 'Gemini Flash Image',
@@ -429,14 +429,14 @@ class Settings {
         ]);
 
         // Gemini Image API Key.
-        add_settings_field('image_gemini_api_key', __('Gemini Image API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('image_gemini_api_key', __('Gemini Image API Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for'   => 'image_gemini_api_key',
-            'description' => __('Specific API Key for generating images via Gemini. Falls back to main Gemini key if empty.', 'open-claw'),
+            'description' => __('Specific API Key for generating images via Gemini. Falls back to main Gemini key if empty.', 'dxtechai-claw-agent'),
             'data-image-provider' => 'gemini',
         ]);
 
         // DALL-E Model.
-        add_settings_field('dalle_model', __('DALL-E Model', 'open-claw'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('dalle_model', __('DALL-E Model', 'dxtechai-claw-agent'), [$this, 'render_select_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for' => 'dalle_model',
             'options'   => [
                 'dall-e-3' => 'DALL-E 3 (Best quality)',
@@ -446,15 +446,15 @@ class Settings {
         ]);
 
         // Pexels API Key.
-        add_settings_field('pexels_api_key', __('Pexels API Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('pexels_api_key', __('Pexels API Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for'   => 'pexels_api_key',
-            'description' => __('Free API key from pexels.com — used as fallback stock photo source.', 'open-claw'),
+            'description' => __('Free API key from pexels.com — used as fallback stock photo source.', 'dxtechai-claw-agent'),
         ]);
 
         // Unsplash API Key.
-        add_settings_field('unsplash_api_key', __('Unsplash Access Key', 'open-claw'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
+        add_settings_field('unsplash_api_key', __('Unsplash Access Key', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_image', 'wpoc_image', [
             'label_for'   => 'unsplash_api_key',
-            'description' => __('Free Access Key from unsplash.com/developers — secondary stock photo fallback.', 'open-claw'),
+            'description' => __('Free Access Key from unsplash.com/developers — secondary stock photo fallback.', 'dxtechai-claw-agent'),
         ]);
     }
 
@@ -557,17 +557,17 @@ class Settings {
         }
 
         $tabs = [
-            'llm'      => __('AI Provider', 'open-claw'),
-            'search'   => __('Web Research', 'open-claw'),
-            'agent'    => __('Agent', 'open-claw'),
-            'image'    => __('Image', 'open-claw'),
-            'telegram' => __('Telegram', 'open-claw'),
-            'discord'  => __('Discord', 'open-claw'),
+            'llm'      => __('AI Provider', 'dxtechai-claw-agent'),
+            'search'   => __('Web Research', 'dxtechai-claw-agent'),
+            'agent'    => __('Agent', 'dxtechai-claw-agent'),
+            'image'    => __('Image', 'dxtechai-claw-agent'),
+            'telegram' => __('Telegram', 'dxtechai-claw-agent'),
+            'discord'  => __('Discord', 'dxtechai-claw-agent'),
         ];
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?> ⚡</h1>
-            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G, Ctrl+I, or Ctrl+Shift+K anywhere in admin to open the Command Palette.', 'open-claw'); ?></p>
+            <p><?php esc_html_e('Configure your AI Agent settings. Press Ctrl+G, Ctrl+I, or Ctrl+Shift+K anywhere in admin to open the Command Palette.', 'dxtechai-claw-agent'); ?></p>
 
             <nav class="nav-tab-wrapper wpoc-tabs">
                 <?php foreach ($tabs as $key => $label) : ?>
@@ -588,7 +588,7 @@ class Settings {
                     </div>
                 <?php endforeach; ?>
 
-                <?php submit_button(__('Save Settings', 'open-claw')); ?>
+                <?php submit_button(__('Save Settings', 'dxtechai-claw-agent')); ?>
             </form>
         </div>
 
@@ -691,13 +691,13 @@ class Settings {
             <div id="wpoc-tg-error" style="font-size: 12px; color: #d63638; margin-top: 4px; display: none;"></div>
         </div>
         <button type="button" id="wpoc-telegram-register" class="button button-primary">
-            <?php esc_html_e('Register Webhook', 'open-claw'); ?>
+            <?php esc_html_e('Register Webhook', 'dxtechai-claw-agent'); ?>
         </button>
         <button type="button" id="wpoc-telegram-remove" class="button">
-            <?php esc_html_e('Remove Webhook', 'open-claw'); ?>
+            <?php esc_html_e('Remove Webhook', 'dxtechai-claw-agent'); ?>
         </button>
         <span id="wpoc-telegram-status" style="margin-left: 10px;"></span>
-        <p class="description"><?php esc_html_e('Enter your Bot Token, then click Register Webhook to connect.', 'open-claw'); ?></p>
+        <p class="description"><?php esc_html_e('Enter your Bot Token, then click Register Webhook to connect.', 'dxtechai-claw-agent'); ?></p>
         <?php
     }
 
@@ -711,13 +711,13 @@ class Settings {
             <div id="wpoc-dc-details" style="font-size: 12px; color: #666;"></div>
         </div>
         <button type="button" id="wpoc-discord-register" class="button button-primary">
-            <?php esc_html_e('Register /openclaw Command', 'open-claw'); ?>
+            <?php esc_html_e('Register /openclaw Command', 'dxtechai-claw-agent'); ?>
         </button>
         <button type="button" id="wpoc-discord-remove" class="button">
-            <?php esc_html_e('Remove Command', 'open-claw'); ?>
+            <?php esc_html_e('Remove Command', 'dxtechai-claw-agent'); ?>
         </button>
         <span id="wpoc-discord-status" style="margin-left: 10px;"></span>
-        <p class="description"><?php esc_html_e('Set the Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command. Add a Guild ID for faster command updates during setup.', 'open-claw'); ?></p>
+        <p class="description"><?php esc_html_e('Set the Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command. Add a Guild ID for faster command updates during setup.', 'dxtechai-claw-agent'); ?></p>
 
         <?php
     }

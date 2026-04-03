@@ -12,15 +12,15 @@ use WP_REST_Response;
 use WP_Error;
 
 /**
- * REST API controller for the Open Claw Agent.
+ * REST API controller for the DXTechAI Claw Agent Agent.
  *
  * Endpoints:
- *   POST /open-claw/v1/agent/chat     — Send a message to the Agent
- *   POST /open-claw/v1/agent/confirm  — Approve/reject a pending action
+ *   POST /dxtechai-claw-agent/v1/agent/chat     — Send a message to the Agent
+ *   POST /dxtechai-claw-agent/v1/agent/confirm  — Approve/reject a pending action
  */
 class AgentController {
 
-    private const NAMESPACE = 'open-claw/v1';
+    private const NAMESPACE = 'dxtechai-claw-agent/v1';
     private const RATE_LIMIT = 20;
     private const RATE_WINDOW = 60;
 
@@ -81,7 +81,7 @@ class AgentController {
         if (! current_user_can('manage_options')) {
             return new WP_Error(
                 'rest_forbidden',
-                esc_html__('You do not have permission to use Open Claw.', 'open-claw'),
+                esc_html__('You do not have permission to use DXTechAI Claw Agent.', 'dxtechai-claw-agent'),
                 ['status' => 403]
             );
         }
@@ -94,7 +94,7 @@ class AgentController {
         if ($count >= self::RATE_LIMIT) {
             return new WP_Error(
                 'rest_rate_limit',
-                esc_html__('Rate limit exceeded. Please wait before sending more requests.', 'open-claw'),
+                esc_html__('Rate limit exceeded. Please wait before sending more requests.', 'dxtechai-claw-agent'),
                 ['status' => 429]
             );
         }

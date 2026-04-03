@@ -1,10 +1,10 @@
-=== Open Claw ===
+=== DXTechAI Claw Agent ===
 Contributors: dxtechai
 Tags: ai, agent, automation, woocommerce, chatbot
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 
 == Description ==
 
-**WP Open Claw** is an AI Agent plugin for WordPress, powered by a ReAct (Reason + Act) loop. The Agent doesn't just answer questions — it **executes actions directly** on your WordPress site.
+**WP DXTechAI Claw Agent** is an AI Agent plugin for WordPress, powered by a ReAct (Reason + Act) loop. The Agent doesn't just answer questions — it **executes actions directly** on your WordPress site.
 
 = Key Features =
 
@@ -86,13 +86,13 @@ Autonomous AI Agent for WordPress — executes real actions instead of just gene
 2. In WP Admin → Plugins → Add New → Upload Plugin
 3. Choose the downloaded ZIP file and click Install Now
 4. Activate the plugin
-5. Go to **Open Claw** in the admin menu → configure your API key
+5. Go to **DXTechAI Claw Agent** in the admin menu → configure your API key
 6. Press `Ctrl+I` or `Ctrl+G` on any admin page to start using the agent
 
 **Method 2: Manual Upload**
 1. Download and extract the ZIP to `/wp-content/plugins/`
 2. Activate the plugin in WP Admin → Plugins
-3. Configure your API key in the Open Claw settings page
+3. Configure your API key in the DXTechAI Claw Agent settings page
 
 == Configuration ==
 
@@ -119,7 +119,7 @@ Choose one of four providers:
 Control the AI agent directly from Telegram:
 
 1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
-2. Copy the Bot Token to **Open Claw → Telegram → Bot Token**
+2. Copy the Bot Token to **DXTechAI Claw Agent → Telegram → Bot Token**
 3. Add your Telegram Chat ID to **Allowed Chat IDs** (send a message to your bot, then use the Telegram Bot API `getUpdates` method to find your chat ID)
 4. Click **Register Webhook** to connect your site to Telegram
 5. Send messages to your bot — the AI agent will respond!
@@ -134,6 +134,21 @@ Control the AI agent directly from Telegram:
 **Commands:**
 * `/start` — Show help message
 * `/reset` — Clear current session
+
+= Discord Integration =
+Control the AI agent directly from Discord via slash commands (`/agent`) and interaction buttons:
+
+1. Create an Application in the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Copy the **Bot Token**, **Application ID**, and **Public Key** to the DXTechAI Claw Agent settings
+3. Set your Interactions Endpoint URL in Discord to: `https://your-domain/wp-json/dxtechai-claw-agent/v1/discord/interactions`
+4. Use the **Sync Commands** button in the plugin settings to register the `/agent` slash command
+5. Use `/agent` in your Discord server to command the agent
+
+**Discord Features:**
+* Control WordPress natively using the Discord slash command interface
+* Rich Embeds for agent responses and confirmation prompts
+* Action buttons directly in the chat to Approve or Reject changes safely
+* Secure validation of every request using Ed25519 signatures
 
 == External Services ==
 
@@ -193,6 +208,12 @@ When Telegram integration is enabled, the plugin sends messages to the Telegram 
 * Terms of Use: [https://telegram.org/tos](https://telegram.org/tos)
 * Privacy Policy: [https://telegram.org/privacy](https://telegram.org/privacy)
 
+= Discord Bot API =
+When Discord integration is enabled, the plugin communicates with the Discord API to sync slash commands and send callback responses.
+* Service URL: [https://discord.com/api](https://discord.com/api)
+* Terms of Use: [https://discord.com/terms](https://discord.com/terms)
+* Privacy Policy: [https://discord.com/privacy](https://discord.com/privacy)
+
 == Frequently Asked Questions ==
 
 = Is the plugin free? =
@@ -216,6 +237,9 @@ Currently supports Posts, Pages, and WooCommerce Products. Custom Post Type supp
 = Can I control the agent from Telegram? =
 Yes! Enable Telegram integration in the settings, add your bot token and chat ID, then register the webhook. You can send natural language messages to the bot and it will control your WordPress site, including action confirmations via inline keyboard buttons.
 
+= Can I use Discord to manage the site? =
+Yes! The plugin fully supports Discord. Configure your Discord Bot settings, set the Interactions Endpoint URL, and you can securely execute tasks and approve actions via interactive buttons inside your Discord server.
+
 == Screenshots ==
 
 1. Command Palette with glassmorphism interface
@@ -224,6 +248,12 @@ Yes! Enable Telegram integration in the settings, add your bot token and chat ID
 4. Action confirmation dialog before execution (Approve/Reject)
 
 == Changelog ==
+
+= 1.0.1 =
+* Rebranded to DXTechAI Claw Agent for compliance purposes.
+* Updated standard asset handlers (JS/CSS enqueues).
+* Added mandatory documentation links for Pexels and Unsplash AI fallback integrations.
+* Resolved `sanitize_text_field` bug corrupting LLM API keys on save.
 
 = 1.0.0 =
 * Initial release
@@ -244,6 +274,9 @@ Yes! Enable Telegram integration in the settings, add your bot token and chat ID
 * REST API with session management (`/agent/chat`, `/agent/confirm`)
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Update required to fix API Key sanitization bug and maintain WordPress repo guidelines.
 
 = 1.0.0 =
 First release — install and configure your preferred AI provider to get started. Gemini offers a free tier!

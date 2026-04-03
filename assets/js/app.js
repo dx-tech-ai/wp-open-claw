@@ -1,5 +1,5 @@
 /**
- * WP Open Claw — Command Palette App
+ * WP DXTechAI Claw Agent — Command Palette App
  *
  * Handles Ctrl+G toggle, REST API communication,
  * real-time log rendering, Action Card approve/reject,

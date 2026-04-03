@@ -43,7 +43,7 @@ jobs:
         run: find src/ -name "*.php" -print0 | xargs -0 -n1 php -l
 
       - name: Check main plugin file syntax
-        run: php -l wp-open-claw.php && php -l uninstall.php
+        run: php -l dxtechai-claw-agent.php && php -l uninstall.php
 
   # ──────────────────────────────────────
   # 2. WordPress Coding Standards (PHPCS)
@@ -84,7 +84,7 @@ jobs:
             --ignore=vendor/,node_modules/ \
             --report=checkstyle \
             -q \
-            src/ wp-open-claw.php \
+            src/ dxtechai-claw-agent.php \
           | cs2pr
         continue-on-error: true  # Warning only for now, remove later
 

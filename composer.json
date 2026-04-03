@@ -1,5 +1,5 @@
 {
-    "name": "openclaw/wp-open-claw",
+    "name": "dxtechai/dxtechai-claw-agent",
     "description": "AI Agent WordPress Plugin — ReAct loop with autonomous action execution",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
