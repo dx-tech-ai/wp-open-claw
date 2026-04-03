@@ -1,4 +1,4 @@
-# WP Open Claw
+# WP DXTechAI Claw Agent
 
 🌐 [English](README-en.md) | **Tiếng Việt**
 
@@ -8,7 +8,7 @@
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPLv2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-**WP Open Claw** là một AI Agent plugin cho WordPress, hoạt động dựa trên vòng lặp **ReAct** (Reason + Act). Agent không chỉ trả lời câu hỏi mà còn **thực thi hành động trực tiếp** trên site WordPress của bạn.
+**WP DXTechAI Claw Agent** là một AI Agent plugin cho WordPress, hoạt động dựa trên vòng lặp **ReAct** (Reason + Act). Agent không chỉ trả lời câu hỏi mà còn **thực thi hành động trực tiếp** trên site WordPress của bạn.
 
 ## ✨ Tính năng chính
 
@@ -54,7 +54,7 @@
 
 ```
 wp-open-claw/
-├── wp-open-claw.php          # Entry point, constants, hooks
+├── dxtechai-claw-agent.php          # Entry point, constants, hooks
 ├── src/
 │   ├── Actions/              # 12 Tool implementations
 │   │   ├── ContentTool.php
@@ -130,7 +130,7 @@ LLM Chat (OpenAI / Gemini / Anthropic / Cloudflare)
 1. Tải ZIP mới nhất từ [GitHub Releases](https://github.com/dx-tech-ai/wp-open-claw/releases)
 2. Vào WP Admin → Plugins → Add New → Upload Plugin
 3. Chọn file ZIP vừa tải → Install Now → Activate
-4. Vào **Open Claw** → cấu hình API key
+4. Vào **DXTechAI Claw Agent** → cấu hình API key
 5. Nhấn `Ctrl+I` hoặc `Ctrl+G` để bắt đầu!
 
 **Cách 2: Clone từ GitHub**
@@ -139,7 +139,7 @@ cd /path/to/wp-content/plugins/
 git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 # Kích hoạt plugin trong WP Admin → Plugins
-# Vào Open Claw → cấu hình API key
+# Vào DXTechAI Claw Agent → cấu hình API key
 # Nhấn Ctrl+I hoặc Ctrl+G để bắt đầu!
 ```
 
@@ -174,7 +174,7 @@ Nếu bạn cấu hình Cloudflare Workers AI (Account ID + API Token), plugin s
 ### Telegram Bot
 
 1. Tạo bot từ [@BotFather](https://t.me/BotFather) trên Telegram
-2. Sao chép Bot Token vào **Open Claw → Telegram → Bot Token**
+2. Sao chép Bot Token vào **DXTechAI Claw Agent → Telegram → Bot Token**
 3. Thêm Chat ID của bạn vào **Allowed Chat IDs**
 4. Nhấn **Register Webhook** để kết nối
 5. Gửi tin nhắn cho bot — AI agent sẽ phản hồi!
@@ -194,11 +194,11 @@ Nếu bạn cấu hình Cloudflare Workers AI (Account ID + API Token), plugin s
 
 1. Tạo application trong Discord Developer Portal và thêm bot vào server
 2. Sao chép `Bot Token`, `Application ID`, `Public Key`
-3. Vào **Open Claw → Discord** và điền các thông tin trên
+3. Vào **DXTechAI Claw Agent → Discord** và điền các thông tin trên
 4. Thêm `Allowed Channel IDs` và `Allowed User IDs` để giới hạn nơi và người được phép dùng bot
 5. Tùy chọn thêm `Guild ID` nếu muốn slash command cập nhật nhanh trong một server Discord cụ thể
 6. Tạo HTTPS public URL cho WordPress của bạn, ưu tiên dùng `ngrok` khi test local, sau đó cấu hình:
-   `https://your-domain/wp-json/open-claw/v1/discord/interactions`
+   `https://your-domain/wp-json/dxtechai-claw-agent/v1/discord/interactions`
    vào ô `Interactions Endpoint URL` trong Discord Developer Portal
 7. Nhấn **Register /openclaw Command**
 8. Trong channel đã whitelist, chạy `/openclaw run`

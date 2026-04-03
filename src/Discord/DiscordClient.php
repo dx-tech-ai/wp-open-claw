@@ -70,17 +70,17 @@ class DiscordClient {
     public function upsertAgentCommand(string $applicationId, string $commandName = 'openclaw', string $guildId = '') {
         $payload = [
             'name'        => $commandName,
-            'description' => 'Control Open Claw from Discord',
+            'description' => 'Control DXTechAI Claw Agent from Discord',
             'options'     => [
                 [
                     'type'        => 1, // SUB_COMMAND
                     'name'        => 'run',
-                    'description' => 'Run a prompt with Open Claw',
+                    'description' => 'Run a prompt with DXTechAI Claw Agent',
                     'options'     => [
                         [
                             'type'        => 3, // STRING
                             'name'        => 'prompt',
-                            'description' => 'What should Open Claw do?',
+                            'description' => 'What should DXTechAI Claw Agent do?',
                             'required'    => true,
                         ],
                     ],

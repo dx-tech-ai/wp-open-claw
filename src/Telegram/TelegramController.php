@@ -14,15 +14,15 @@ use WP_REST_Response;
  * Telegram Webhook Controller.
  *
  * Receives webhooks from Telegram Bot API and routes them
- * through the Open Claw Kernel ReAct loop.
+ * through the DXTechAI Claw Agent Kernel ReAct loop.
  *
  * Endpoints:
- *   POST /open-claw/v1/telegram/webhook  — Telegram webhook
- *   POST /open-claw/v1/telegram/setup    — Register/remove webhook (admin only)
+ *   POST /dxtechai-claw-agent/v1/telegram/webhook  — Telegram webhook
+ *   POST /dxtechai-claw-agent/v1/telegram/setup    — Register/remove webhook (admin only)
  */
 class TelegramController {
 
-    private const NAMESPACE = 'open-claw/v1';
+    private const NAMESPACE = 'dxtechai-claw-agent/v1';
 
     /**
      * Register REST API routes for Telegram.
@@ -105,7 +105,7 @@ class TelegramController {
         // Handle /start command.
         if ($text === '/start') {
             $client = new TelegramClient();
-            $help  = "🤖 *Open Claw Agent*\n\n";
+            $help  = "🤖 *DXTechAI Claw Agent Agent*\n\n";
             $help .= "AI trợ lý giúp bạn quản lý WordPress qua Telegram.\n";
             $help .= "Chỉ cần gõ yêu cầu bằng ngôn ngữ tự nhiên.\n\n";
 

@@ -1,4 +1,4 @@
-# WP Open Claw
+# WP DXTechAI Claw Agent
 
 🌐 **English** | [Tiếng Việt](README.md)
 
@@ -8,7 +8,7 @@
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/License-GPLv2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-**WP Open Claw** is an AI Agent plugin for WordPress, powered by the **ReAct** (Reason + Act) loop. The agent doesn't just answer questions — it **directly executes actions** on your WordPress site.
+**WP DXTechAI Claw Agent** is an AI Agent plugin for WordPress, powered by the **ReAct** (Reason + Act) loop. The agent doesn't just answer questions — it **directly executes actions** on your WordPress site.
 
 ## ✨ Key Features
 
@@ -52,7 +52,7 @@
 
 ```
 wp-open-claw/
-├── wp-open-claw.php          # Entry point, constants, hooks
+├── dxtechai-claw-agent.php          # Entry point, constants, hooks
 ├── src/
 │   ├── Actions/              # 11 Tool implementations
 │   │   ├── ContentTool.php
@@ -123,7 +123,7 @@ LLM Chat (OpenAI / Gemini / Anthropic / Cloudflare)
 1. Download the latest ZIP from [GitHub Releases](https://github.com/dx-tech-ai/wp-open-claw/releases)
 2. Go to WP Admin → Plugins → Add New → Upload Plugin
 3. Select the ZIP file → Install Now → Activate
-4. Go to **Open Claw** → configure your API key
+4. Go to **DXTechAI Claw Agent** → configure your API key
 5. Press `Ctrl+I` or `Ctrl+G` to get started!
 
 **Option 2: Clone from GitHub**
@@ -132,7 +132,7 @@ cd /path/to/wp-content/plugins/
 git clone https://github.com/dx-tech-ai/wp-open-claw.git
 
 # Activate plugin in WP Admin → Plugins
-# Go to Open Claw → configure API key
+# Go to DXTechAI Claw Agent → configure API key
 # Press Ctrl+I or Ctrl+G to get started!
 ```
 
@@ -168,11 +168,11 @@ If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will
 
 1. Create an application in the Discord Developer Portal and add the bot to your server
 2. Copy the `Bot Token`, `Application ID`, and `Public Key`
-3. Open **Open Claw → Discord** in WordPress and fill in those values
+3. Open **DXTechAI Claw Agent → Discord** in WordPress and fill in those values
 4. Add `Allowed Channel IDs` and `Allowed User IDs` to restrict where and who can run the bot
 5. Optionally add a `Guild ID` if you want faster slash command updates inside one Discord server
 6. Expose your WordPress site over HTTPS, preferably with `ngrok` for local testing, and set:
-   `https://your-domain/wp-json/open-claw/v1/discord/interactions`
+   `https://your-domain/wp-json/dxtechai-claw-agent/v1/discord/interactions`
    as the `Interactions Endpoint URL` in the Discord Developer Portal
 7. Click **Register /openclaw Command**
 8. Run `/openclaw run` in an allowed Discord channel

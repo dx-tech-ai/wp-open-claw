@@ -620,7 +620,7 @@ class Kernel {
             $wooSection .= "8. When user asks to create products for a category, first create the category, then create products using the returned category ID.\n";
         }
 
-        $prompt = "You are Open Claw, an AI Agent embedded in a WordPress website. You are an action-oriented agent — your job is to EXECUTE real WordPress operations, not just provide text answers.\n\n";
+        $prompt = "You are DXTechAI Claw Agent, an AI Agent embedded in a WordPress website. You are an action-oriented agent — your job is to EXECUTE real WordPress operations, not just provide text answers.\n\n";
         $prompt .= "## Your Capabilities\n";
         $prompt .= "You have access to tools that let you:\n";
         $prompt .= "1. **Create/Update posts** using `wp_content_manager`\n";

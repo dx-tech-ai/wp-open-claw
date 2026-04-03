@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'openclaw/wp-open-claw',
+        'name' => 'dxtechai/dxtechai-claw-agent',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
         'reference' => '171deac545179bf3a3ae6970bb70b64ed447b86f',
@@ -10,7 +10,7 @@
         'dev' => false,
     ),
     'versions' => array(
-        'openclaw/wp-open-claw' => array(
+        'dxtechai/dxtechai-claw-agent' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
             'reference' => '171deac545179bf3a3ae6970bb70b64ed447b86f',

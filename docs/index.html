@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WP Open Claw — AI Agent for WordPress</title>
+    <title>WP DXTechAI Claw Agent — AI Agent for WordPress</title>
     <meta name="description" content="Autonomous AI Agent for WordPress — executes real actions instead of just generating text. 12 built-in tools, WooCommerce support, Telegram Bot, multi-LLM provider.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -388,7 +388,7 @@
         <div class="container nav-inner">
             <a href="#" class="nav-logo">
                 <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="url(#g1)" stroke-width="2"/><path d="M10 20l6-12 6 12" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="13" r="2" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#a855f7"/><stop offset="0.5" stop-color="#3b82f6"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
-                Open Claw
+                DXTechAI Claw Agent
             </a>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#features">Features</a></li>
@@ -397,6 +397,7 @@
                 <li><a href="#providers">Providers</a></li>
                 <li><a href="#install">Install</a></li>
                 <li><a href="#telegram">Telegram</a></li>
+                <li><a href="#discord">Discord</a></li>
             </ul>
             <a href="https://github.com/dx-tech-ai/wp-open-claw" class="nav-cta">⭐ GitHub</a>
             <button class="nav-toggle" id="navToggle" aria-label="Menu">
@@ -411,14 +412,14 @@
         <div class="glow-orb"></div>
         <div class="container hero-content">
             <div class="hero-badge">
-                <span class="badge">🚀 v1.0.0 — Open Source & Free</span>
+                <span class="badge">🚀 v1.0.1 — Open Source & Free</span>
             </div>
             <h1 class="hero-title">
                 AI Agent that<br>
                 <span class="gradient-text">Actually Acts</span>
             </h1>
             <p class="hero-desc">
-                WP Open Claw is an autonomous AI Agent for WordPress. It doesn't just answer questions — it <strong>executes real actions</strong> on your site using a ReAct loop.
+                WP DXTechAI Claw Agent is an autonomous AI Agent for WordPress. It doesn't just answer questions — it <strong>executes real actions</strong> on your site using a ReAct loop.
             </p>
             <div class="hero-actions">
                 <a href="https://github.com/dx-tech-ai/wp-open-claw" class="btn-primary">
@@ -458,7 +459,7 @@
                     <span class="terminal-dot red"></span>
                     <span class="terminal-dot yellow"></span>
                     <span class="terminal-dot green"></span>
-                    <span class="terminal-title">Open Claw — Ctrl+I / Ctrl+G</span>
+                    <span class="terminal-title">DXTechAI Claw Agent — Ctrl+I / Ctrl+G</span>
                 </div>
                 <div class="terminal-body" id="terminalBody">
                     <div class="terminal-line" style="animation-delay: 0.2s"><span class="prompt">You › </span><span class="cmd">Tạo danh mục Thời Trang rồi thêm 3 sản phẩm áo thun vào</span></div>
@@ -481,7 +482,7 @@
             <div class="reveal">
                 <p class="section-label">Features</p>
                 <h2 class="section-title">An Agent, Not a Chatbot</h2>
-                <p class="section-desc">Open Claw doesn't just generate text — it reasons, plans, and executes real WordPress actions in a continuous loop.</p>
+                <p class="section-desc">DXTechAI Claw Agent doesn't just generate text — it reasons, plans, and executes real WordPress actions in a continuous loop.</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card reveal">
@@ -518,6 +519,11 @@
                     <div class="feature-icon cyan">📱</div>
                     <h3>Telegram Bot</h3>
                     <p>Control your WordPress site via Telegram. Send natural language commands, receive responses, and confirm actions with inline keyboard buttons.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon blue">👾</div>
+                    <h3>Discord Bot</h3>
+                    <p>Control WordPress natively using Discord slash commands (/agent). Supports rich embeds and action buttons to approve or reject tasks securely.</p>
                 </div>
                 <div class="feature-card reveal">
                     <div class="feature-icon purple">📊</div>
@@ -654,7 +660,7 @@
                 <div class="install-step reveal">
                     <div class="install-step-num">3</div>
                     <h4>Configure API Key</h4>
-                    <p>Open Claw menu →<br>add your LLM API key</p>
+                    <p>DXTechAI Claw Agent menu →<br>add your LLM API key</p>
                 </div>
                 <div class="install-step reveal">
                     <div class="install-step-num">4</div>
@@ -690,7 +696,7 @@
                 <div class="install-step reveal">
                     <div class="install-step-num">2</div>
                     <h4>Add Token</h4>
-                    <p>Paste Bot Token in<br>Open Claw → Telegram</p>
+                    <p>Paste Bot Token in<br>DXTechAI Claw Agent → Telegram</p>
                 </div>
                 <div class="install-step reveal">
                     <div class="install-step-num">3</div>
@@ -718,6 +724,39 @@
                     <div class="feature-icon orange">🔒</div>
                     <h3>Secure</h3>
                     <p>Secret token verification, chat ID whitelist. Only authorized users can control your site.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Discord Integration -->
+    <section class="install" id="discord" style="padding-top: 0; padding-bottom: 50px;">
+        <div class="container">
+            <div class="reveal">
+                <p class="section-label">Discord</p>
+                <h2 class="section-title">Control WordPress via Discord</h2>
+                <p class="section-desc">Command your AI agent natively from any Discord server using the <code>/agent</code> slash command and interactive action buttons.</p>
+            </div>
+            <div class="install-steps">
+                <div class="install-step reveal">
+                    <div class="install-step-num" style="background:var(--accent-blue)">1</div>
+                    <h4>Create App</h4>
+                    <p>Create an app in the<br><a href="https://discord.com/developers/applications" style="color:var(--accent-cyan)">Discord Portal</a></p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num" style="background:var(--accent-blue)">2</div>
+                    <h4>Set Credentials</h4>
+                    <p>Paste token & IDs in<br>DXTech AI settings</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num" style="background:var(--accent-blue)">3</div>
+                    <h4>Set Webhook</h4>
+                    <p>Set Interactions URL<br>in Discord portal</p>
+                </div>
+                <div class="install-step reveal">
+                    <div class="install-step-num" style="background:var(--accent-blue)">4</div>
+                    <h4>Sync Commands</h4>
+                    <p>Click "Sync Commands"<br>& use <code>/agent</code></p>
                 </div>
             </div>
         </div>

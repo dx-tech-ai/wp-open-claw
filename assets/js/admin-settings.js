@@ -66,7 +66,7 @@
             botToken = tokenInput.value;
         }
 
-        return fetch(wpApiSettings.root + 'open-claw/v1/telegram/setup', {
+        return fetch(wpApiSettings.root + 'dxtechai-claw-agent/v1/telegram/setup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -163,7 +163,7 @@
 // Discord logic
 (function() {
     function discordApi(action) {
-        return fetch(wpApiSettings.root + 'open-claw/v1/discord/setup', {
+        return fetch(wpApiSettings.root + 'dxtechai-claw-agent/v1/discord/setup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
