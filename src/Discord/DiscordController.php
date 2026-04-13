@@ -184,11 +184,6 @@ class DiscordController {
             return $this->interactionMessage('Please provide a prompt.');
         }
 
-        $integrationUserId = $this->resolveIntegrationUserId();
-        if ($integrationUserId <= 0) {
-            return $this->interactionMessage('No administrator account available for Discord execution.');
-        }
-
         $this->sendImmediateResponse([
             'type' => 4,
             'data' => [
@@ -197,7 +192,7 @@ class DiscordController {
             ],
         ]);
 
-        $this->processCommand($channelId, $userId, $prompt, $settings, $integrationUserId);
+        $this->processCommand($channelId, $userId, $prompt, $settings);
         exit;
     }
 
@@ -228,11 +223,6 @@ class DiscordController {
         if ($ownerId !== $userId) {
             return $this->interactionMessage('Only the user who started this request can confirm it.');
         }
-
-        $integrationUserId = $this->resolveIntegrationUserId();
-        if ($integrationUserId <= 0) {
-            return $this->interactionMessage('No administrator account available for Discord execution.');
-        }
         $session = get_transient($this->sessionKey($channelId, $userId));
         if (! $session) {
             return $this->interactionMessage('Session expired. Please run /' . self::COMMAND_NAME . ' again.');
@@ -252,7 +242,6 @@ class DiscordController {
             $actionId,
             $approved,
             $settings,
-            $integrationUserId,
             $session
         );
         exit;
@@ -310,11 +299,12 @@ class DiscordController {
         string $channelId,
         string $userId,
         string $prompt,
-        array $settings,
-        int $integrationUserId
+        array $settings
     ): void {
         $this->prepareForBackgroundWork();
-        wp_set_current_user($integrationUserId);
+
+        // Custom authentication is bypassed here because it is handled by the `determine_current_user` 
+        // filter during the REST API init phase.
 
         try {
             $kernel  = new Kernel();
@@ -355,11 +345,12 @@ class DiscordController {
         string $actionId,
         bool $approved,
         array $settings,
-        int $integrationUserId,
         array $session
     ): void {
         $this->prepareForBackgroundWork();
-        wp_set_current_user($integrationUserId);
+
+        // Custom authentication is bypassed here because it is handled by the `determine_current_user` 
+        // filter during the REST API init phase.
 
         try {
             $kernel = new Kernel();
@@ -596,25 +587,6 @@ class DiscordController {
 
         $ids = array_map('trim', explode(',', $allowed));
         return in_array($userId, $ids, true);
-    }
-
-    /**
-     * Resolve a deterministic administrator account for integration execution.
-     */
-    private function resolveIntegrationUserId(): int {
-        $admins = get_users([
-            'role'    => 'administrator',
-            'number'  => 1,
-            'orderby' => 'ID',
-            'order'   => 'ASC',
-            'fields'  => 'ID',
-        ]);
-
-        if (empty($admins)) {
-            return 0;
-        }
-
-        return (int) $admins[0];
     }
 
     /**

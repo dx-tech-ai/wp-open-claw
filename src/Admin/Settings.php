@@ -345,6 +345,12 @@ class Settings {
             'description' => __('Maximum number of ReAct loop iterations (1-20).', 'dxtechai-claw-agent'),
         ]);
 
+        // Agent Run As User.
+        add_settings_field('agent_run_as_user_id', __('Run Webhooks As User', 'dxtechai-claw-agent'), [$this, 'render_user_select_field'], self::PAGE_SLUG . '_agent', 'wpoc_agent', [
+            'label_for'   => 'agent_run_as_user_id',
+            'description' => __('Mandatory security setting. Select the Administrator account that will own actions performed by Telegram/Discord webhooks.', 'dxtechai-claw-agent'),
+        ]);
+
         // Telegram Enabled.
         add_settings_field('telegram_enabled', __('Enable Telegram', 'dxtechai-claw-agent'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_telegram', 'wpoc_telegram', [
             'label_for'   => 'telegram_enabled',
@@ -477,6 +483,7 @@ class Settings {
             'google_cse_api_key'        => '',
             'google_cse_cx'             => '',
             'max_iterations'            => 10,
+            'agent_run_as_user_id'      => 0,
             'image_gen_enabled'         => false,
             'image_gen_provider'        => 'gemini',
             'image_gemini_api_key'      => '',
@@ -516,6 +523,7 @@ class Settings {
             'google_cse_api_key'        => trim(wp_unslash((string) ($input['google_cse_api_key'] ?? ''))),
             'google_cse_cx'             => sanitize_text_field($input['google_cse_cx'] ?? ''),
             'max_iterations'            => max(1, min(20, absint($input['max_iterations'] ?? 10))),
+            'agent_run_as_user_id'      => absint($input['agent_run_as_user_id'] ?? 0),
             'image_gen_enabled'         => ! empty($input['image_gen_enabled']),
             'image_gen_provider'        => in_array($input['image_gen_provider'] ?? '', ['gemini', 'openai_dalle'], true) ? $input['image_gen_provider'] : 'gemini',
             'image_gemini_api_key'      => trim(wp_unslash((string) ($input['image_gemini_api_key'] ?? ''))),
@@ -613,6 +621,25 @@ class Settings {
             <?php endforeach; ?>
         </select>
         <?php
+    }
+
+    public function render_user_select_field(array $args): void {
+        $options = get_option(self::OPTION_NAME, $this->get_defaults());
+        $value   = absint($options[$args['label_for']] ?? 0);
+        $users   = get_users(['role' => 'administrator']);
+        ?>
+        <select id="<?php echo esc_attr($args['label_for']); ?>"
+                name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>">
+            <option value="0"><?php esc_html_e('&mdash; Select an Administrator &mdash;', 'dxtechai-claw-agent'); ?></option>
+            <?php foreach ($users as $user) : ?>
+                <option value="<?php echo esc_attr((string) $user->ID); ?>" <?php selected($value, $user->ID); ?>>
+                    <?php echo esc_html($user->display_name . ' (' . $user->user_login . ')'); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <?php if (! empty($args['description'])) : ?>
+            <p class="description"><strong><?php esc_html_e('Security Note:', 'dxtechai-claw-agent'); ?></strong> <?php echo esc_html($args['description']); ?></p>
+        <?php endif;
     }
 
     public function render_text_field(array $args): void {
