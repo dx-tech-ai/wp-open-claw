@@ -1,0 +1,13 @@
+services:
+  zalo-bridge:
+    build: .
+    container_name: wpoc-zalo-bridge
+    restart: unless-stopped
+    environment:
+      - WP_BASE_URL=https://your-site.com  # URL of your WordPress site
+      - WP_BRIDGE_SECRET=change-me          # Must match 'Bridge Secret' in WP settings
+    volumes:
+      - zalo_data:/data
+
+volumes:
+  zalo_data:

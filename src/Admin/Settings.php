@@ -32,6 +32,8 @@ class Settings {
         'image_gemini_api_key',
         'pexels_api_key',
         'unsplash_api_key',
+        'zalo_bridge_secret',
+        'zalo_cookies',
     ];
 
     /**
@@ -204,6 +206,17 @@ class Settings {
                 echo '<p>' . esc_html__('Control DXTechAI Claw Agent via Discord slash commands and interaction buttons.', 'dxtechai-claw-agent') . '</p>';
             },
             self::PAGE_SLUG . '_discord'
+        );
+
+        // Zalo Section.
+        add_settings_section(
+            'wpoc_zalo',
+            __('Zalo Integration (Unofficial)', 'dxtechai-claw-agent'),
+            function () {
+                echo '<p>' . esc_html__('Control DXTechAI Claw Agent via Zalo Web chat. Requires a Python Bridge service running alongside WordPress.', 'dxtechai-claw-agent') . '</p>';
+                echo '<p style="color:#e65100;"><strong>' . esc_html__('⚠ Warning: This uses an unofficial Zalo API. Your account may be banned. Please use a secondary clone account.', 'dxtechai-claw-agent') . '</strong></p>';
+            },
+            self::PAGE_SLUG . '_zalo'
         );
 
         $this->add_fields();
@@ -411,6 +424,44 @@ class Settings {
         // Discord command setup.
         add_settings_field('discord_setup', __('Slash Command', 'dxtechai-claw-agent'), [$this, 'render_discord_setup_field'], self::PAGE_SLUG . '_discord', 'wpoc_discord');
 
+        // --- Zalo Fields ---
+
+        // Zalo Enabled.
+        add_settings_field('zalo_enabled', __('Enable Zalo', 'dxtechai-claw-agent'), [$this, 'render_checkbox_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_enabled',
+            'description' => __('Enable Zalo Web chat integration via Bridge service.', 'dxtechai-claw-agent'),
+        ]);
+
+        // Zalo IMEI.
+        add_settings_field('zalo_imei', __('IMEI', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_imei',
+            'description' => __('Device IMEI extracted from Zalo Web session. See documentation for extraction steps.', 'dxtechai-claw-agent'),
+        ]);
+
+        // Zalo Cookies.
+        add_settings_field('zalo_cookies', __('Session Cookies (JSON)', 'dxtechai-claw-agent'), [$this, 'render_textarea_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_cookies',
+            'description' => __('Session cookies JSON extracted from Zalo Web. Stored encrypted.', 'dxtechai-claw-agent'),
+        ]);
+
+        // Zalo Phone (optional info).
+        add_settings_field('zalo_phone', __('Phone Number (optional)', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_phone',
+            'description' => __('Phone number of the bot account. For reference only.', 'dxtechai-claw-agent'),
+        ]);
+
+        // Zalo Bridge Secret.
+        add_settings_field('zalo_bridge_secret', __('Bridge Secret', 'dxtechai-claw-agent'), [$this, 'render_password_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_bridge_secret',
+            'description' => __('Shared secret to authenticate incoming requests from the Python Bridge.', 'dxtechai-claw-agent'),
+        ]);
+
+        // Zalo Allowed User IDs.
+        add_settings_field('zalo_allowed_user_ids', __('Allowed User IDs', 'dxtechai-claw-agent'), [$this, 'render_text_field'], self::PAGE_SLUG . '_zalo', 'wpoc_zalo', [
+            'label_for'   => 'zalo_allowed_user_ids',
+            'description' => __('Comma-separated Zalo user IDs allowed to interact. Leave empty to allow all.', 'dxtechai-claw-agent'),
+        ]);
+
         // --- Image Generation Fields ---
 
         // Image Gen Enabled.
@@ -494,6 +545,12 @@ class Settings {
             'discord_guild_id'          => '',
             'discord_allowed_channel_ids' => '',
             'discord_allowed_user_ids'  => '',
+            'zalo_enabled'              => false,
+            'zalo_imei'                 => '',
+            'zalo_cookies'              => '',
+            'zalo_phone'                => '',
+            'zalo_bridge_secret'        => 'change-me-in-production',
+            'zalo_allowed_user_ids'     => '',
         ];
     }
 
@@ -533,6 +590,12 @@ class Settings {
             'discord_guild_id'          => trim(wp_unslash((string) ($input['discord_guild_id'] ?? ''))),
             'discord_allowed_channel_ids' => sanitize_text_field($input['discord_allowed_channel_ids'] ?? ''),
             'discord_allowed_user_ids'  => sanitize_text_field($input['discord_allowed_user_ids'] ?? ''),
+            'zalo_enabled'              => ! empty($input['zalo_enabled']),
+            'zalo_imei'                 => sanitize_text_field($input['zalo_imei'] ?? ''),
+            'zalo_cookies'              => trim(wp_unslash((string) ($input['zalo_cookies'] ?? ''))),
+            'zalo_phone'                => sanitize_text_field($input['zalo_phone'] ?? ''),
+            'zalo_bridge_secret'        => trim(wp_unslash((string) ($input['zalo_bridge_secret'] ?? ''))),
+            'zalo_allowed_user_ids'     => sanitize_text_field($input['zalo_allowed_user_ids'] ?? ''),
         ];
 
         // Preserve existing secret token if not changed.
@@ -563,6 +626,7 @@ class Settings {
             'image'    => __('Image', 'dxtechai-claw-agent'),
             'telegram' => __('Telegram', 'dxtechai-claw-agent'),
             'discord'  => __('Discord', 'dxtechai-claw-agent'),
+            'zalo'     => __('Zalo', 'dxtechai-claw-agent'),
         ];
         ?>
         <div class="wrap">
@@ -720,5 +784,18 @@ class Settings {
         <p class="description"><?php esc_html_e('Set the Interaction Endpoint URL in Discord Developer Portal, then save settings and register the slash command. Add a Guild ID for faster command updates during setup.', 'dxtechai-claw-agent'); ?></p>
 
         <?php
+    }
+
+    public function render_textarea_field(array $args): void {
+        $options = self::get_decrypted_settings();
+        $value   = $options[$args['label_for']] ?? '';
+        ?>
+        <textarea id="<?php echo esc_attr($args['label_for']); ?>"
+                  name="<?php echo esc_attr(self::OPTION_NAME . '[' . $args['label_for'] . ']'); ?>"
+                  rows="4"
+                  class="large-text code"><?php echo esc_textarea($value); ?></textarea>
+        <?php if (! empty($args['description'])) : ?>
+            <p class="description"><?php echo esc_html($args['description']); ?></p>
+        <?php endif;
     }
 }
