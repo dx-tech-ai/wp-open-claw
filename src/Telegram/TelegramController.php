@@ -155,8 +155,9 @@ class TelegramController {
             return;
         }
 
-        // Set current user to admin for Kernel context.
-        wp_set_current_user(1);
+        // Custom authentication is bypassed here because it is handled by the `determine_current_user` 
+        // filter during the REST API init phase. This ensures WordPress core security measures and 
+        // third-party security plugins are fully respected.
 
         // Extend time limit for LLM calls.
         if (function_exists('set_time_limit')) {
@@ -252,8 +253,9 @@ class TelegramController {
         $status_text = $approved ? '✅ *Đã chấp nhận* — đang thực hiện...' : '❌ *Đã từ chối*';
         $client->editMessageText($chat_id, $message_id, $status_text);
 
-        // Set current user to admin.
-        wp_set_current_user(1);
+        // Custom authentication is bypassed here because it is handled by the `determine_current_user` 
+        // filter during the REST API init phase. This ensures WordPress core security measures and 
+        // third-party security plugins are fully respected.
 
         // Restore session and process.
         $session = get_transient($this->sessionKey($chat_id));

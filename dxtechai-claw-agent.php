@@ -79,5 +79,75 @@ function wpoc_init(): void {
         $discord = new \OpenClaw\Discord\DiscordController();
         $discord->register_routes();
     });
+
+    // Authenticate Webhooks natively via WordPress REST API process.
+    add_filter('determine_current_user', function ($user_id) {
+        if (!empty($user_id)) {
+            return $user_id;
+        }
+
+        if (empty($_SERVER['REQUEST_URI'])) {
+            return $user_id;
+        }
+
+        $uri = $_SERVER['REQUEST_URI'];
+        
+        // Fast paths to ignore non-webhook traces.
+        if (strpos($uri, '/dxtechai-claw-agent/v1/telegram/webhook') === false && 
+            strpos($uri, '/dxtechai-claw-agent/v1/discord/interactions') === false) {
+            return $user_id;
+        }
+
+        $settings    = \OpenClaw\Admin\Settings::get_decrypted_settings();
+        $mapped_user = absint($settings['agent_run_as_user_id'] ?? 0);
+
+        if ($mapped_user <= 0) {
+            return $user_id;
+        }
+
+        // --- Telegram Integration Auth ---
+        if (strpos($uri, '/dxtechai-claw-agent/v1/telegram/webhook') !== false) {
+            $received = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+            $secret   = $settings['telegram_secret_token'] ?? '';
+            if (!empty($secret) && !empty($received) && hash_equals($secret, $received)) {
+                return $mapped_user;
+            }
+        }
+
+        // --- Discord Integration Auth ---
+        if (strpos($uri, '/dxtechai-claw-agent/v1/discord/interactions') !== false) {
+            $signature = $_SERVER['HTTP_X_SIGNATURE_ED25519'] ?? '';
+            $timestamp = $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '';
+            $publicKey = $settings['discord_public_key'] ?? '';
+
+            if (
+                !empty($signature) && 
+                !empty($timestamp) && 
+                !empty($publicKey) && 
+                function_exists('sodium_crypto_sign_verify_detached')
+            ) {
+                // Determine user gracefully via stream context without consuming it exclusively.
+                $rawBody = file_get_contents('php://input');
+                
+                if (ctype_xdigit(trim($signature)) && ctype_xdigit(trim($publicKey))) {
+                    $decodedSignature = hex2bin(trim($signature));
+                    $decodedKey       = hex2bin(trim($publicKey));
+
+                    if ($decodedSignature !== false && $decodedKey !== false) {
+                        try {
+                            $isValid = sodium_crypto_sign_verify_detached($decodedSignature, $timestamp . $rawBody, $decodedKey);
+                            if ($isValid) {
+                                return $mapped_user;
+                            }
+                        } catch (\Throwable $e) {
+                            return $user_id;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $user_id;
+    }, 20);
 }
 add_action('plugins_loaded', 'wpoc_init');
