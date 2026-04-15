@@ -447,6 +447,7 @@ class DiscordController {
         header('Connection: close');
         header('Content-Length: ' . strlen($json));
 
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $json is produced by wp_json_encode(); escaping would corrupt the raw JSON response sent to Discord.
         echo $json;
 
         if (function_exists('fastcgi_finish_request')) {
