@@ -90,7 +90,7 @@ function wpoc_init(): void {
             return $user_id;
         }
 
-        $uri = $_SERVER['REQUEST_URI'];
+        $uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ) );
         
         // Fast paths to ignore non-webhook traces.
         if (strpos($uri, '/dxtechai-claw-agent/v1/telegram/webhook') === false && 
@@ -107,7 +107,7 @@ function wpoc_init(): void {
 
         // --- Telegram Integration Auth ---
         if (strpos($uri, '/dxtechai-claw-agent/v1/telegram/webhook') !== false) {
-            $received = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+            $received = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '' ) );
             $secret   = $settings['telegram_secret_token'] ?? '';
             if (!empty($secret) && !empty($received) && hash_equals($secret, $received)) {
                 return $mapped_user;
@@ -116,8 +116,8 @@ function wpoc_init(): void {
 
         // --- Discord Integration Auth ---
         if (strpos($uri, '/dxtechai-claw-agent/v1/discord/interactions') !== false) {
-            $signature = $_SERVER['HTTP_X_SIGNATURE_ED25519'] ?? '';
-            $timestamp = $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '';
+            $signature = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_SIGNATURE_ED25519'] ?? '' ) );
+            $timestamp = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '' ) );
             $publicKey = $settings['discord_public_key'] ?? '';
 
             if (
