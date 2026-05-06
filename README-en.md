@@ -23,9 +23,11 @@
 | 🛒 **WooCommerce Ready** | Auto-activates product, order, and customer management tools |
 | 💾 **Session Persistence** | Saves session state via WordPress transients |
 | 🔍 **Web Research** | Direct web search (free DuckDuckGo or Google CSE) |
+| 📱 **Telegram Bot** | Control WordPress via Telegram with inline keyboard confirmations |
 | 💬 **Discord Bot** | Control WordPress from Discord slash commands with Approve/Reject buttons |
+| 💬 **Zalo Chat** | 2-way AI assistant integrated into your personal Zalo account |
 
-## 🛠️ 11 Built-in Tools
+## 🛠️ Built-in Tools
 
 ### WordPress Core (8 tools)
 
@@ -84,10 +86,22 @@ wp-open-claw/
 │       ├── ToolInterface.php
 │       ├── DynamicConfirmInterface.php
 │       └── Manager.php         # Tool registry & dispatcher
+│   ├── Telegram/
+│   │   ├── TelegramController.php  # Webhook handler
+│   │   ├── TelegramClient.php      # Telegram Bot API client
+│   │   └── StepFormatter.php       # Format agent steps for Telegram
 │   ├── Discord/
 │   │   ├── DiscordController.php   # Discord interactions handler
 │   │   ├── DiscordClient.php       # Discord REST API client
 │   │   └── StepFormatter.php       # Format agent steps for Discord
+│   ├── Zalo/
+│   │   ├── ZaloController.php      # Zalo interactions handler
+│   │   └── StepFormatter.php       # Format agent steps for Zalo
+├── zalo-bridge/                    # Python service for Zalo Web API
+│   ├── bridge.py                   # zlapi connection wrapper
+│   ├── docker-compose.yml          # Standalone docker-compose config
+│   ├── Dockerfile                  # Container definition
+│   └── requirements.txt            # Python dependencies
 ├── assets/
 │   ├── css/
 │   └── js/
@@ -164,6 +178,22 @@ If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will
 
 - **Max Iterations**: Maximum ReAct loop iterations (1–20, default: 10)
 
+### Telegram Bot
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Copy the Bot Token into **DXTechAI Claw Agent → Telegram → Bot Token**
+3. Add your Chat ID to **Allowed Chat IDs**
+4. Click **Register Webhook** to connect
+5. Send a message to the bot — the AI agent will respond!
+
+**Telegram capabilities:**
+- Send commands using natural language to control WordPress
+- Approve/Reject actions via inline keyboard buttons
+- Persistent sessions per chat
+- Secure with secret token and whitelist chat IPs
+- `/start` — Help menu
+- `/reset` — Clear current session
+
 ### Discord Bot
 
 1. Create an application in the Discord Developer Portal and add the bot to your server
@@ -185,6 +215,31 @@ If you configure Cloudflare Workers AI (Account ID + API Token), the plugin will
 - Write actions render **Approve** / **Reject** buttons
 - Only the user who started the request can confirm it
 - Sessions are persisted per `channel + Discord user`
+
+### Zalo Bridge
+
+Zalo does not offer a public Bot API for personal accounts, so we use a bridge (Zalo Bridge) running Python via Docker to control your account.
+
+#### Step 1: Start Zalo Bridge
+Navigate to the bridge directory and start it using Docker:
+```bash
+cd zalo-bridge
+docker-compose up -d --build
+```
+*Note: The server will show login errors until you complete the authentication steps below.*
+
+#### Step 2: Authentication
+1. Log into [chat.zalo.me](https://chat.zalo.me) on Chrome.
+2. Get **IMEI**: Press `F12` → **Application** → **Local Storage** → Copy `z_uuid`.
+3. Get **Cookie**: Press `F12` → **Network** → Click any request → Copy the `cookie:` value in **Request Headers**.
+4. Go to WP Admin: **DXTechAI Claw Agent → Zalo** → Paste IMEI and Cookies → **Save Changes**.
+
+The bridge will automatically detect the new credentials, perform login, and maintain the connection.
+
+#### Step 3: Usage & Approval
+- Message the connected Zalo account to start chatting with the AI.
+- Approve actions: Reply with `ok`, `yes`, `approve`.
+- Reject actions: Reply with `no`, `reject`, `cancel`.
 
 ## 💡 Usage Examples
 
@@ -261,6 +316,8 @@ Yes! The agent supports Chain Actions — after confirming one action, the agent
 - 11 built-in tools (8 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 - Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
+- Zalo 2-way bridge utilizing `zlapi` for personal account bots
+- Telegram Bot integration with inline keyboard confirmations
 - Discord slash command integration with approval buttons
 - ReAct Loop engine with configurable max iterations
 - DuckDuckGo web search (free, no API key needed)

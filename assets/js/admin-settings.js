@@ -1,10 +1,10 @@
-(function() {
+(function () {
     // Tab switching.
-    document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(tab) {
-        tab.addEventListener('click', function(e) {
+    document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function (tab) {
+        tab.addEventListener('click', function (e) {
             e.preventDefault();
-            document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function(t) { t.classList.remove('nav-tab-active'); });
-            document.querySelectorAll('.wpoc-tab-content').forEach(function(c) { c.style.display = 'none'; });
+            document.querySelectorAll('.wpoc-tabs .nav-tab').forEach(function (t) { t.classList.remove('nav-tab-active'); });
+            document.querySelectorAll('.wpoc-tab-content').forEach(function (c) { c.style.display = 'none'; });
             this.classList.add('nav-tab-active');
             var targetId = this.getAttribute('data-tab');
             var targetEl = document.getElementById(targetId);
@@ -16,8 +16,8 @@
     var providerSelect = document.getElementById('llm_provider');
     if (providerSelect) {
         var providers = ['openai', 'anthropic', 'gemini', 'cloudflare'];
-        providers.forEach(function(p) {
-            document.querySelectorAll('.wpoc-provider-' + p).forEach(function(el) {
+        providers.forEach(function (p) {
+            document.querySelectorAll('.wpoc-provider-' + p).forEach(function (el) {
                 var tr = el.closest('tr');
                 if (tr) tr.setAttribute('data-provider', p);
             });
@@ -25,7 +25,7 @@
 
         function toggleProviderFields() {
             var selected = providerSelect.value;
-            document.querySelectorAll('tr[data-provider]').forEach(function(row) {
+            document.querySelectorAll('tr[data-provider]').forEach(function (row) {
                 row.style.display = row.getAttribute('data-provider') === selected ? '' : 'none';
             });
         }
@@ -38,8 +38,8 @@
     var imageProviderSelect = document.getElementById('image_gen_provider');
     if (imageProviderSelect) {
         var imageProviders = ['gemini', 'openai_dalle'];
-        imageProviders.forEach(function(p) {
-            document.querySelectorAll('.wpoc-image-provider-' + p).forEach(function(el) {
+        imageProviders.forEach(function (p) {
+            document.querySelectorAll('.wpoc-image-provider-' + p).forEach(function (el) {
                 var tr = el.closest('tr');
                 if (tr) tr.setAttribute('data-image-provider', p);
             });
@@ -47,7 +47,7 @@
 
         function toggleImageProviderFields() {
             var selected = imageProviderSelect.value;
-            document.querySelectorAll('tr[data-image-provider]').forEach(function(row) {
+            document.querySelectorAll('tr[data-image-provider]').forEach(function (row) {
                 row.style.display = row.getAttribute('data-image-provider') === selected ? '' : 'none';
             });
         }
@@ -58,7 +58,7 @@
 })();
 
 // Telegram logic
-(function() {
+(function () {
     function telegramApi(action) {
         var botToken = '';
         var tokenInput = document.getElementById('telegram_bot_token');
@@ -73,7 +73,7 @@
                 'X-WP-Nonce': wpApiSettings.nonce
             },
             body: JSON.stringify({ action: action, bot_token: botToken })
-        }).then(function(r) { return r.json(); });
+        }).then(function (r) { return r.json(); });
     }
 
     function telegramSetup(action) {
@@ -81,26 +81,26 @@
         if (!status) return;
         status.textContent = 'Processing...';
         status.style.color = '#666';
-        telegramApi(action).then(function(data) {
+        telegramApi(action).then(function (data) {
             status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
             status.style.color = data.success ? 'green' : 'red';
             setTimeout(loadStatus, 1000);
-        }).catch(function() {
+        }).catch(function () {
             status.textContent = 'Request failed.';
             status.style.color = 'red';
         });
     }
 
     function loadStatus() {
-        var infoBox  = document.getElementById('wpoc-telegram-info');
-        var badge    = document.getElementById('wpoc-tg-badge');
-        var botName  = document.getElementById('wpoc-tg-bot');
-        var details  = document.getElementById('wpoc-tg-details');
+        var infoBox = document.getElementById('wpoc-telegram-info');
+        var badge = document.getElementById('wpoc-tg-badge');
+        var botName = document.getElementById('wpoc-tg-bot');
+        var details = document.getElementById('wpoc-tg-details');
         var errorDiv = document.getElementById('wpoc-tg-error');
 
         if (!infoBox) return; // Only process if we're on a page with telegram settings
 
-        telegramApi('status').then(function(data) {
+        telegramApi('status').then(function (data) {
             infoBox.style.display = 'block';
 
             if (!data.success) {
@@ -134,7 +134,7 @@
                 details.textContent = 'No webhook registered. Click "Register Webhook" to connect.';
                 errorDiv.style.display = 'none';
             }
-        }).catch(function() {
+        }).catch(function () {
             infoBox.style.display = 'block';
             badge.textContent = '❓ Unknown';
             badge.style.background = '#787c82';
@@ -143,16 +143,16 @@
     }
 
     var regBtn = document.getElementById('wpoc-telegram-register');
-    var rmBtn  = document.getElementById('wpoc-telegram-remove');
-    if (regBtn) regBtn.addEventListener('click', function() { telegramSetup('register'); });
-    if (rmBtn)  rmBtn.addEventListener('click', function() { telegramSetup('remove'); });
+    var rmBtn = document.getElementById('wpoc-telegram-remove');
+    if (regBtn) regBtn.addEventListener('click', function () { telegramSetup('register'); });
+    if (rmBtn) rmBtn.addEventListener('click', function () { telegramSetup('remove'); });
 
     if (typeof wpApiSettings !== 'undefined') {
         if (document.getElementById('wpoc-telegram-info')) {
             loadStatus();
         }
     } else {
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (typeof wpApiSettings !== 'undefined' && document.getElementById('wpoc-telegram-info')) {
                 loadStatus();
             }
@@ -161,7 +161,7 @@
 })();
 
 // Discord logic
-(function() {
+(function () {
     function discordApi(action) {
         return fetch(wpApiSettings.root + 'dxtechai-claw-agent/v1/discord/setup', {
             method: 'POST',
@@ -170,7 +170,7 @@
                 'X-WP-Nonce': wpApiSettings.nonce
             },
             body: JSON.stringify({ action: action })
-        }).then(function(r) { return r.json(); });
+        }).then(function (r) { return r.json(); });
     }
 
     function discordSetup(action) {
@@ -178,11 +178,11 @@
         if (!status) return;
         status.textContent = 'Processing...';
         status.style.color = '#666';
-        discordApi(action).then(function(data) {
+        discordApi(action).then(function (data) {
             status.textContent = data.message || (data.success ? 'Done!' : 'Failed.');
             status.style.color = data.success ? 'green' : 'red';
             setTimeout(loadStatus, 1000);
-        }).catch(function() {
+        }).catch(function () {
             status.textContent = 'Request failed.';
             status.style.color = 'red';
         });
@@ -190,13 +190,13 @@
 
     function loadStatus() {
         var infoBox = document.getElementById('wpoc-discord-info');
-        var badge   = document.getElementById('wpoc-dc-badge');
+        var badge = document.getElementById('wpoc-dc-badge');
         var botName = document.getElementById('wpoc-dc-bot');
         var details = document.getElementById('wpoc-dc-details');
 
         if (!infoBox) return; // Only process if we're on a page with discord settings
 
-        discordApi('status').then(function(data) {
+        discordApi('status').then(function (data) {
             infoBox.style.display = 'block';
 
             if (!data.success) {
@@ -246,7 +246,7 @@
                 guildCode.textContent = data.guild_id;
                 details.appendChild(guildCode);
             }
-        }).catch(function() {
+        }).catch(function () {
             infoBox.style.display = 'block';
             badge.textContent = 'UNKNOWN';
             badge.style.background = '#787c82';
@@ -255,16 +255,16 @@
     }
 
     var regBtn = document.getElementById('wpoc-discord-register');
-    var rmBtn  = document.getElementById('wpoc-discord-remove');
-    if (regBtn) regBtn.addEventListener('click', function() { discordSetup('register'); });
-    if (rmBtn)  rmBtn.addEventListener('click', function() { discordSetup('remove'); });
+    var rmBtn = document.getElementById('wpoc-discord-remove');
+    if (regBtn) regBtn.addEventListener('click', function () { discordSetup('register'); });
+    if (rmBtn) rmBtn.addEventListener('click', function () { discordSetup('remove'); });
 
     if (typeof wpApiSettings !== 'undefined') {
         if (document.getElementById('wpoc-discord-info')) {
             loadStatus();
         }
     } else {
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (typeof wpApiSettings !== 'undefined' && document.getElementById('wpoc-discord-info')) {
                 loadStatus();
             }

@@ -25,8 +25,9 @@
 | 🔍 **Web Research** | Tìm kiếm web trực tiếp (DuckDuckGo miễn phí hoặc Google CSE) |
 | 📱 **Telegram Bot** | Điều khiển WordPress qua Telegram với xác nhận bằng inline keyboard |
 | 💬 **Discord Bot** | Điều khiển WordPress qua Discord slash command với nút Approve/Reject |
+| 💬 **Zalo Chat** | Trợ lý AI 2 chiều tích hợp trực tiếp vào tài khoản Zalo cá nhân của bạn |
 
-## 🛠️ 12 Tools tích hợp
+## 🛠️ Built-in Tools
 
 ### WordPress Core (9 tools)
 
@@ -95,6 +96,14 @@ wp-open-claw/
 │   │   ├── DiscordController.php   # Discord interactions handler
 │   │   ├── DiscordClient.php       # Discord REST API client
 │   │   └── StepFormatter.php       # Format agent steps for Discord
+│   ├── Zalo/
+│   │   ├── ZaloController.php      # Zalo interactions handler
+│   │   └── StepFormatter.php       # Format agent steps for Zalo
+├── zalo-bridge/                    # Python service for Zalo Web API
+│   ├── bridge.py                   # zlapi connection wrapper
+│   ├── docker-compose.yml          # Standalone docker-compose config
+│   ├── Dockerfile                  # Container definition
+│   └── requirements.txt            # Python dependencies
 ├── assets/
 │   ├── css/
 │   └── js/
@@ -212,6 +221,31 @@ Nếu bạn cấu hình Cloudflare Workers AI (Account ID + API Token), plugin s
 - Chỉ user khởi tạo yêu cầu mới có thể bấm nút xác nhận
 - Session được lưu theo từng cặp `channel + Discord user`
 
+### Zalo Bridge
+
+Zalo không cung cấp public Bot API cho tài khoản cá nhân, vì vậy chúng tôi sử dụng một cầu nối (Zalo Bridge) chạy bằng Python qua Docker để điều khiển tài khoản của bạn.
+
+#### Bước 1: Khởi động Zalo Bridge
+Di chuyển vào thư mục bridge và khởi động bằng Docker:
+```bash
+cd zalo-bridge
+docker-compose up -d --build
+```
+*Lưu ý: Server sẽ báo lỗi đăng nhập cho đến khi bạn hoàn tất bước cấu hình bên dưới.*
+
+#### Bước 2: Cấu hình tài khoản (Authentication)
+1. Đăng nhập vào [chat.zalo.me](https://chat.zalo.me) trên trình duyệt Chrome.
+2. Lấy **IMEI**: Nhấn `F12` → **Application** → **Local Storage** → Copy giá trị `z_uuid`.
+3. Lấy **Cookie**: Nhấn `F12` → **Network** → Click một request bất kỳ → Copy nội dung `cookie:` trong **Request Headers**.
+4. Vào WP Admin: **DXTechAI Claw Agent → Zalo** → Dán IMEI và Cookies → **Save Changes**.
+
+Bridge sẽ tự động nhận diện thông tin mới, thực hiện đăng nhập và duy trì kết nối.
+
+#### Bước 3: Sử dụng & Phê duyệt
+- Nhắn tin cho tài khoản Zalo đã kết nối để bắt đầu chat với AI.
+- Phê duyệt hành động: Nhắn `ok`, `yes`, `có`, `đồng ý`.
+- Từ chối hành động: Nhắn `no`, `hủy`, `không`.
+
 ## 💡 Ví dụ sử dụng
 
 ### WordPress
@@ -301,6 +335,7 @@ Có! Bật Telegram trong cài đặt, thêm bot token và chat ID, rồi đăng
 - 12 built-in tools (9 WordPress core + 3 WooCommerce)
 - Support for OpenAI (GPT-4o), Gemini (2.5 Flash/Pro), Anthropic (Claude Sonnet 4)
 - Command Palette UI with `Ctrl+I` or `Ctrl+G` shortcuts
+- Zalo 2-way bridge utilizing `zlapi` for personal account bots
 - Telegram Bot integration with inline keyboard confirmations
 - Discord slash command integration with approval buttons
 - Report & Analytics tool (dashboard, order/product/content reports)

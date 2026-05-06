@@ -78,6 +78,10 @@ function wpoc_init(): void {
         // Discord interactions route.
         $discord = new \OpenClaw\Discord\DiscordController();
         $discord->register_routes();
+
+        // Zalo Bridge route.
+        $zalo = new \OpenClaw\Zalo\ZaloController();
+        $zalo->register_routes();
     });
 
     // Authenticate Webhooks natively via WordPress REST API process.
